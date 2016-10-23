@@ -7,7 +7,7 @@ import numpy as np
 def explicit_solve(f, a, b, eta, n=2):
     points = np.linspace(a, b, num=n)
     h = (b - a) / (n - 1)
-    y = np.zeros((n), dtype='float64')
+    y = np.zeros((n))
     y[0] = eta
     for i, x in enumerate(points[:-1]):
         y[i + 1] = y[i] +  h * f(x, y[i])
