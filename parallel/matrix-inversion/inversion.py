@@ -4,10 +4,6 @@ import numpy as np
 import sys
 
 '''
-This code provides parallel implementation of matrix inversion using gaussian
-elimination algorithm.
-https://en.wikipedia.org/wiki/Gaussian_elimination
-
 Matrix rows are distributed among processes as follows:
 row_id | block_id|
 -----------------|
