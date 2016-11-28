@@ -39,7 +39,7 @@ class SplayTreeNode {
   std::shared_ptr<SplayTreeNode> GetParent() const {
     return parent_.lock();
   }
-  std::string Preorder() {
+  std::string Preorder() const {
     std::stringstream res;
     res << value_ << " ";
     res << "(";
@@ -79,6 +79,9 @@ class SplayTree {
     return root_;
   }
  private:
+  bool Equiv(const T& value1, const T& value2) const {
+    return !comp(value1, value2) && !comp(value2, value1);
+  }
   void Splay(NodePtr node);
   void ZigZig(NodePtr& node, NodePtr& parent, NodePtr& grandparent);
   void ZigZag(NodePtr& node, NodePtr& parent, NodePtr& grandparent);
@@ -93,29 +96,29 @@ class SplayTree {
 
 template <typename T, typename Comp>
 void SplayTree<T, Comp>::Insert(const T& value) {
-  NodePtr cur = root_, parent;
-  while (cur) {
-    parent = cur;
-    if (comp(value, cur->GetValue())) {
-      cur = cur->GetLeft();
-    } else if (comp(cur->GetValue(), value)) {
-      cur = cur->GetRight();
+  NodePtr cur_node = root_, parent;
+  while (cur_node) {
+    parent = cur_node;
+    if (comp(value, cur_node->GetValue())) {
+      cur_node = cur_node->GetLeft();
+    } else if (comp(cur_node->GetValue(), value)) {
+      cur_node = cur_node->GetRight();
     } else {
       return;
     }
   }
 
-  cur.reset(new SplayTreeNode<T>(value));
-  cur->SetParent(parent);
+  cur_node.reset(new SplayTreeNode<T>(value));
+  cur_node->SetParent(parent);
   if (!parent) {
-    root_ = cur;
+    root_ = cur_node;
   } else if (comp(value, parent->GetValue())) {
-    parent->SetLeft(cur);
+    parent->SetLeft(cur_node);
   } else {
-    parent->SetRight(cur);
+    parent->SetRight(cur_node);
   }
 
-  Splay(cur);
+  Splay(cur_node);
 }
 
 template <typename T, typename Comp>
@@ -165,40 +168,43 @@ void SplayTree<T, Comp>::Erase(const T& value) {
 
 template <typename T, typename Comp>
 std::shared_ptr<SplayTreeNode<T>> SplayTree<T, Comp>::Find(const T& value) {
-  NodePtr cur = root_, parent;
-  while (cur && (comp(cur->GetValue(), value) || comp(value, cur->GetValue()))) {
-    parent = cur;
-    if (comp(value, cur->GetValue())) {
-      cur = cur->GetLeft();
+  NodePtr cur_node = root_, parent;
+  while (cur_node && !Equiv(cur_node->GetValue(), value)) {
+    parent = cur_node;
+    if (comp(value, cur_node->GetValue())) {
+      cur_node = cur_node->GetLeft();
     } else {
-      cur = cur->GetRight();
+      cur_node = cur_node->GetRight();
     }
   }
-  if (cur && (comp(cur->GetValue(), value) || comp(value, cur->GetValue()))) {
+  if (cur_node && !Equiv(cur_node->GetValue(), value)) {
     return nullptr;
   } else {
-    return cur;
+    if (cur_node) {
+      Splay(cur_node);
+    }
+    return cur_node;
   }
 }
 
 template <typename T, typename Comp>
 std::shared_ptr<SplayTreeNode<T>> SplayTree<T, Comp>::GetLowerBound(
     const T& value) {
-  NodePtr cur = root_;
+  NodePtr cur_node = root_;
   NodePtr best_node;
-  while (cur) {
-    if (comp(cur->GetValue(), value)) {
-      best_node = cur;
-      cur = cur->GetRight();
+  while (cur_node) {
+    if (comp(cur_node->GetValue(), value)) {
+      best_node = cur_node;
+      cur_node = cur_node->GetRight();
     } else {
-      cur = cur->GetLeft();
+      cur_node = cur_node->GetLeft();
     }
   }
   return best_node;
 }
 
 template <typename T, typename Comp>
-void SplayTree<T, Comp>::Splay(std::shared_ptr<SplayTreeNode<T>> node) {
+void SplayTree<T, Comp>::Splay(NodePtr node) {
   while (node->GetParent()) {
     auto parent = node->GetParent();
     auto grandparent = parent->GetParent();
@@ -420,6 +426,10 @@ void RunTests() {
     }
   }
 
+  splay_tree.Clear();
+  splay_tree.Insert(5);
+  splay_tree.Find(100);
+
   std::cout << "All tests passed!" << std::endl;
 }
 
@@ -456,21 +466,22 @@ class RoomsRange {
 };
 
 int main() {
-  RunTests();
+  // RunTests();
   SplayTree<RoomsRange> splay_tree;
-  int t;
-  std::cin >> t;
+  int queries_num;
+  std::cin >> queries_num;
   std::vector<RoomsRange> checkins;
-  while (t--) {
-    int type;
-    std::cin >> type;
-    if (type == 1) {
+  while (queries_num--) {
+    int query_type;
+    std::cin >> query_type;
+    if (query_type == 1) {
       int start, length;
       std::cin >> start >> length;
       checkins.push_back(RoomsRange(start, length, checkins.size()));
       RoomsRange cur_checkin(start + length, length, 0);
-      auto p = splay_tree.GetLowerBound(cur_checkin);
-      if (p && p->GetValue().GetRightmost() >= start) {
+      auto lower_bound_pointer = splay_tree.GetLowerBound(cur_checkin);
+      if (lower_bound_pointer &&
+          lower_bound_pointer->GetValue().GetRightmost() >= start) {
         std::cout << "0";
       } else {
         std::cout << "1";
@@ -479,8 +490,9 @@ int main() {
     } else {
       int checkin_id;
       std::cin >> checkin_id;
-      auto p = splay_tree.Find(checkins[checkin_id]);
-      if (p && p->GetValue().GetId() == checkin_id) {
+      auto checkin_pointer = splay_tree.Find(checkins[checkin_id]);
+      if (checkin_pointer &&
+          checkin_pointer->GetValue().GetId() == checkin_id) {
         splay_tree.Erase(checkins[checkin_id]);
         std::cout << "1";
       } else {
