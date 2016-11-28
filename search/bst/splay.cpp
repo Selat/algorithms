@@ -65,28 +65,35 @@ class SplayTreeNode {
 template <typename T, typename Comp = std::less<T>>
 class SplayTree {
  public:
+  using NodePtr = std::shared_ptr<SplayTreeNode<T>> ;
   void Insert(const T& value);
   void Erase(const T& value);
-  std::shared_ptr<SplayTreeNode<T>> Find(const T& value);
-  std::shared_ptr<SplayTreeNode<T>> GetLowerBound(const T& value);
+  NodePtr Find(const T& value);
+  NodePtr GetLowerBound(const T& value);
 
   void Clear() {
     root_ = nullptr;
   }
 
-  std::shared_ptr<SplayTreeNode<T>> GetRoot() {
+  NodePtr GetRoot() {
     return root_;
   }
  private:
-  void Splay(std::shared_ptr<SplayTreeNode<T>> node);
+  void Splay(NodePtr node);
+  void ZigZig(NodePtr& node, NodePtr& parent, NodePtr& grandparent);
+  void ZigZag(NodePtr& node, NodePtr& parent, NodePtr& grandparent);
+  void ZagZig(NodePtr& node, NodePtr& parent, NodePtr& grandparent);
+  void ZagZag(NodePtr& node, NodePtr& parent, NodePtr& grandparent);
+  void Zig(NodePtr& node);
+  void Zag(NodePtr& node);
 
   Comp comp;
-  std::shared_ptr<SplayTreeNode<T>> root_;
+  NodePtr root_;
 };
 
 template <typename T, typename Comp>
 void SplayTree<T, Comp>::Insert(const T& value) {
-  std::shared_ptr<SplayTreeNode<T>> cur = root_, parent;
+  NodePtr cur = root_, parent;
   while (cur) {
     parent = cur;
     if (comp(value, cur->GetValue())) {
@@ -158,7 +165,7 @@ void SplayTree<T, Comp>::Erase(const T& value) {
 
 template <typename T, typename Comp>
 std::shared_ptr<SplayTreeNode<T>> SplayTree<T, Comp>::Find(const T& value) {
-  std::shared_ptr<SplayTreeNode<T>> cur = root_, parent;
+  NodePtr cur = root_, parent;
   while (cur && (comp(cur->GetValue(), value) || comp(value, cur->GetValue()))) {
     parent = cur;
     if (comp(value, cur->GetValue())) {
@@ -177,8 +184,8 @@ std::shared_ptr<SplayTreeNode<T>> SplayTree<T, Comp>::Find(const T& value) {
 template <typename T, typename Comp>
 std::shared_ptr<SplayTreeNode<T>> SplayTree<T, Comp>::GetLowerBound(
     const T& value) {
-  std::shared_ptr<SplayTreeNode<T>> cur = root_;
-  std::shared_ptr<SplayTreeNode<T>> best_node;
+  NodePtr cur = root_;
+  NodePtr best_node;
   while (cur) {
     if (comp(cur->GetValue(), value)) {
       best_node = cur;
@@ -193,116 +200,154 @@ std::shared_ptr<SplayTreeNode<T>> SplayTree<T, Comp>::GetLowerBound(
 template <typename T, typename Comp>
 void SplayTree<T, Comp>::Splay(std::shared_ptr<SplayTreeNode<T>> node) {
   while (node->GetParent()) {
-    auto p = node->GetParent();
-    auto gp = p->GetParent();
-    if (gp) {
-      auto gg = gp->GetParent();
-      bool is_left = true;
-      if (gg && gp == gg->GetRight()) {
-        is_left = false;
+    auto parent = node->GetParent();
+    auto grandparent = parent->GetParent();
+    if (grandparent) {
+      auto grand_grandparent = grandparent->GetParent();
+      bool is_left_son = true;
+      if (grand_grandparent && grandparent == grand_grandparent->GetRight()) {
+        is_left_son = false;
       }
-      if (gp->GetLeft() == node->GetParent()) {
+      if (grandparent->GetLeft() == parent) {
         if (node == node->GetParent()->GetLeft()) {
-          if (p->GetRight()) {
-            p->GetRight()->SetParent(gp);
-          }
-          gp->SetLeft(p->GetRight());
-          p->SetRight(gp);
-          if (node->GetRight()) {
-            node->GetRight()->SetParent(p);
-          }
-          p->SetLeft(node->GetRight());
-          node->SetRight(p);
-          node->SetParent(gp->GetParent());
-          p->SetParent(node);
-          gp->SetParent(p);
-          if (gp == root_) {
-            root_ = node;
-          }
+          ZigZig(node, parent, grandparent);
         } else {
-          if (node->GetRight()) {
-            node->GetRight()->SetParent(gp);
-          }
-          gp->SetLeft(node->GetRight());
-          if (node->GetLeft()) {
-            node->GetLeft()->SetParent(p);
-          }
-          p->SetRight(node->GetLeft());
-          node->SetLeft(p);
-          node->SetRight(gp);
-          node->SetParent(gp->GetParent());
-          p->SetParent(node);
-          gp->SetParent(node);
-          if (gp == root_) {
-            root_ = node;
-          }
+          ZigZag(node, parent, grandparent);
         }
       } else {
-        if (node == node->GetParent()->GetLeft()) {
-          if (node->GetLeft()) {
-            node->GetLeft()->SetParent(gp);
-          }
-          gp->SetRight(node->GetLeft());
-          if (node->GetRight()) {
-            node->GetRight()->SetParent(p);
-          }
-          p->SetLeft(node->GetRight());
-          node->SetLeft(gp);
-          node->SetRight(p);
-          node->SetParent(gp->GetParent());
-          p->SetParent(node);
-          gp->SetParent(node);
-          if (gp == root_) {
-            root_ = node;
-          }
+        if (node == parent->GetLeft()) {
+          ZagZig(node, parent, grandparent);
         } else {
-          if (p->GetLeft()) {
-            p->GetLeft()->SetParent(gp);
-          }
-          gp->SetRight(p->GetLeft());
-          p->SetLeft(gp);
-          if (node->GetLeft()) {
-            node->GetLeft()->SetParent(p);
-          }
-          p->SetRight(node->GetLeft());
-          node->SetLeft(p);
-          node->SetParent(gp->GetParent());
-          p->SetParent(node);
-          gp->SetParent(p);
-          if (gp == root_) {
-            root_ = node;
-          }
+          ZagZag(node, parent, grandparent);
         }
       }
-      if (gg) {
-        if (is_left) {
-          gg->SetLeft(node);
+      if (grand_grandparent) {
+        if (is_left_son) {
+          grand_grandparent->SetLeft(node);
         } else {
-          gg->SetRight(node);
+          grand_grandparent->SetRight(node);
         }
       }
-    } else if (node == node->GetParent()->GetLeft()) {
-      assert(root_ == node->GetParent());
-      if (node->GetRight()) {
-        node->GetRight()->SetParent(root_);
-      }
-      root_->SetLeft(node->GetRight());
-      root_->SetParent(node);
-      node->SetParent(nullptr);
-      node->SetRight(root_);
-      root_ = node;
+    } else if (node == parent->GetLeft()) {
+      Zig(node);
     } else {
-      assert(root_ == node->GetParent());
-      if (node->GetLeft()) {
-        node->GetLeft()->SetParent(root_);
-      }
-      root_->SetRight(node->GetLeft());
-      root_->SetParent(node);
-      node->SetParent(nullptr);
-      node->SetLeft(root_);
-      root_ = node;
+      Zag(node);
     }
   }
+}
+
+template <typename T, typename Comp>
+void SplayTree<T, Comp>::ZigZig(
+    SplayTree::NodePtr& node, SplayTree::NodePtr& parent,
+    SplayTree::NodePtr& grandparent) {
+  if (parent->GetRight()) {
+    parent->GetRight()->SetParent(grandparent);
+  }
+  grandparent->SetLeft(parent->GetRight());
+  parent->SetRight(grandparent);
+  if (node->GetRight()) {
+    node->GetRight()->SetParent(parent);
+  }
+  parent->SetLeft(node->GetRight());
+  node->SetRight(parent);
+  node->SetParent(grandparent->GetParent());
+  parent->SetParent(node);
+  grandparent->SetParent(parent);
+  if (grandparent == root_) {
+    root_ = node;
+  }
+}
+
+template <typename T, typename Comp>
+void SplayTree<T, Comp>::ZigZag(
+    SplayTree::NodePtr& node, SplayTree::NodePtr& parent,
+    SplayTree::NodePtr& grandparent) {
+  if (node->GetRight()) {
+    node->GetRight()->SetParent(grandparent);
+  }
+  grandparent->SetLeft(node->GetRight());
+  if (node->GetLeft()) {
+    node->GetLeft()->SetParent(parent);
+  }
+  parent->SetRight(node->GetLeft());
+  node->SetLeft(parent);
+  node->SetRight(grandparent);
+  node->SetParent(grandparent->GetParent());
+  parent->SetParent(node);
+  grandparent->SetParent(node);
+  if (grandparent == root_) {
+    root_ = node;
+  }
+}
+
+template <typename T, typename Comp>
+void SplayTree<T, Comp>::ZagZig(
+    SplayTree::NodePtr& node, SplayTree::NodePtr& parent,
+    SplayTree::NodePtr& grandparent) {
+  if (node->GetLeft()) {
+    node->GetLeft()->SetParent(grandparent);
+  }
+  grandparent->SetRight(node->GetLeft());
+  if (node->GetRight()) {
+    node->GetRight()->SetParent(parent);
+  }
+  parent->SetLeft(node->GetRight());
+  node->SetLeft(grandparent);
+  node->SetRight(parent);
+  node->SetParent(grandparent->GetParent());
+  parent->SetParent(node);
+  grandparent->SetParent(node);
+  if (grandparent == root_) {
+    root_ = node;
+  }
+}
+
+template <typename T, typename Comp>
+void SplayTree<T, Comp>::ZagZag(
+    SplayTree::NodePtr& node, SplayTree::NodePtr& parent,
+    SplayTree::NodePtr& grandparent) {
+  if (parent->GetLeft()) {
+    parent->GetLeft()->SetParent(grandparent);
+  }
+  grandparent->SetRight(parent->GetLeft());
+  parent->SetLeft(grandparent);
+  if (node->GetLeft()) {
+    node->GetLeft()->SetParent(parent);
+  }
+  parent->SetRight(node->GetLeft());
+  node->SetLeft(parent);
+  node->SetParent(grandparent->GetParent());
+  parent->SetParent(node);
+  grandparent->SetParent(parent);
+  if (grandparent == root_) {
+    root_ = node;
+  }
+}
+
+template <typename T, typename Comp>
+void SplayTree<T, Comp>::Zig(SplayTree::NodePtr& node) {
+  assert(root_ == node->GetParent());
+  if (node->GetRight()) {
+    node->GetRight()->SetParent(root_);
+  }
+  root_->SetLeft(node->GetRight());
+  root_->SetParent(node);
+  node->SetParent(nullptr);
+  node->SetRight(root_);
+  root_ = node;
+}
+
+template <typename T, typename Comp>
+void SplayTree<T, Comp>::Zag(SplayTree::NodePtr& node) {
+  assert(root_ == node->GetParent());
+  if (node->GetLeft()) {
+    node->GetLeft()->SetParent(root_);
+  }
+  root_->SetRight(node->GetLeft());
+  root_->SetParent(node);
+  node->SetParent(nullptr);
+  node->SetLeft(root_);
+  root_ = node;
 }
 
 void RunTests() {
@@ -411,7 +456,7 @@ class RoomsRange {
 };
 
 int main() {
-  // RunTests();
+  RunTests();
   SplayTree<RoomsRange> splay_tree;
   int t;
   std::cin >> t;
