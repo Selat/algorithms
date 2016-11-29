@@ -46,50 +46,22 @@ class TreeNode {
   Color GetColor() const {
     return color_;
   }
-  int CheckRBTreeProperty() const {
-    if (color_ == BLACK) {
-      int l = 1;
-      if (left_) {
-        assert(this == left_->GetParent().get());
-        l = left_->CheckRBTreeProperty();
-      }
-      int r = 1;
-      if (right_) {
-        assert(this == right_->GetParent().get());
-        r = right_->CheckRBTreeProperty();
-      }
-      assert(l == r);
-      return l + 1;
+  int CheckRBTreeProperty() const;
+  std::string Preorder() const;
+
+  static bool IsBlack(std::shared_ptr<TreeNode> node) {
+    if (node) {
+      return node->GetColor() == BLACK;
     } else {
-      int l = 1;
-      if (left_) {
-        assert(this == left_->GetParent().get());
-        assert(left_->color_ == BLACK);
-        l = left_->CheckRBTreeProperty();
-      }
-      int r = 1;
-      if (right_) {
-        assert(this == right_->GetParent().get());
-        assert(right_->color_ == BLACK);
-        r = right_->CheckRBTreeProperty();
-      }
-      assert(l == r);
-      return l;
+      return true;
     }
   }
-  std::string Preorder() const {
-    std::stringstream res;
-    res << value_ << ((color_ == RED)?'@':' ') << " ";
-    res << "(";
-    if (left_) {
-      res << left_->Preorder();
+  static bool IsRed(std::shared_ptr<TreeNode> node) {
+    if (node) {
+      return node->GetColor() == RED;
+    } else {
+      return false;
     }
-    res << ") (";
-    if (right_) {
-      res << right_->Preorder();
-    }
-    res << ")";
-    return res.str();
   }
  private:
   Color color_;
@@ -106,11 +78,11 @@ class RedBlackTree {
   void Insert(const T& value);
   void Erase(const T& value);
   NodePtr Find(const T& value) const;
-  NodePtr GetLowerBound(const T& value);
+  NodePtr GetLowerBound(const T& value) const;
 
   void CheckRBTreeProperty() const {
+    assert(TreeNode<T>::IsBlack(root_));
     if (root_) {
-      assert(root_->GetColor() == TreeNode<T>::BLACK);
       root_->CheckRBTreeProperty();
     }
   }
@@ -145,96 +117,7 @@ class RedBlackTree {
     }
   }
 
-  void LeftRotate(NodePtr nodex) {
-    auto nodey = nodex->GetRight();
-    assert(nodey);
-    auto parent = nodex->GetParent();
-    nodey->SetParent(parent);
-    if (parent) {
-      if (nodex == parent->GetLeft()) {
-        parent->SetLeft(nodey);
-      } else {
-        parent->SetRight(nodey);
-      }
-    } else {
-      root_ = nodey;
-    }
-
-    if (nodey->GetLeft()) {
-      nodey->GetLeft()->SetParent(nodex);
-    }
-    nodex->SetRight(nodey->GetLeft());
-    nodey->SetLeft(nodex);
-    nodex->SetParent(nodey);
-  }
-
-  void RightRotate(NodePtr nodey) {
-    auto nodex = nodey->GetLeft();
-    assert(nodex);
-    auto parent = nodey->GetParent();
-    nodex->SetParent(parent);
-    if (parent) {
-      if (nodey == parent->GetLeft()) {
-        parent->SetLeft(nodex);
-      } else {
-        parent->SetRight(nodex);
-      }
-    } else {
-      root_ = nodex;
-    }
-
-    if (nodex->GetRight()) {
-      nodex->GetRight()->SetParent(nodey);
-    }
-    nodey->SetLeft(nodex->GetRight());
-    nodex->SetRight(nodey);
-    nodey->SetParent(nodex);
-  }
-
-  // Assumption: node has at most one non-leaf child
-  void Erase(NodePtr node) {
-    NodePtr child = node->GetLeft();
-    if (node->GetRight()) {
-      child = node->GetRight();
-    }
-
-    auto parent = node->GetParent();
-    if (child) {
-      child->SetParent(parent);
-      if (!parent) {
-        root_ = child;
-      } else if (node == parent->GetLeft()) {
-        parent->SetLeft(child);
-      } else {
-        parent->SetRight(child);
-      }
-      if (node->GetColor() == TreeNode<T>::BLACK) {
-        if (child && child->GetColor() == TreeNode<T>::RED) {
-          child->SetColor(TreeNode<T>::BLACK);
-        } else {
-          EraseCase1(node);
-        }
-      }
-    } else if (parent) {
-      if (node->GetColor() == TreeNode<T>::BLACK) {
-        EraseCase1(node);
-        parent = node->GetParent();
-        if (node == parent->GetLeft()) {
-          parent->SetLeft(nullptr);
-        } else {
-          parent->SetRight(nullptr);
-        }
-      } else if (node == parent->GetLeft()) {
-        parent->SetLeft(nullptr);
-      } else {
-        parent->SetRight(nullptr);
-      }
-    } else {
-      root_ = nullptr;
-    }
-  }
-
-  NodePtr GetSibling(NodePtr node) {
+  static NodePtr GetSibling(NodePtr node) {
     auto parent = node->GetParent();
     assert(parent);
     if (node == parent->GetLeft()) {
@@ -244,27 +127,94 @@ class RedBlackTree {
     }
   }
 
+  void LeftRotate(NodePtr node);
+  void RightRotate(NodePtr node);
+
   // This implementation is based on algorithm description provided at
   // https://en.wikipedia.org/wiki/Red%E2%80%93black_tree
-  // node is root
+
+  // New node is inserted as in a usual BST and is colored red. Afterwards we
+  // rebalance the tree if needed by calling InsertCase1(node).
+  // node is the root
   void InsertCase1(NodePtr node);
-  // node parent is black
+  // node's parent is black
   void InsertCase2(NodePtr node);
-  // node uncle is red
+  // node's uncle and parent are red
   void InsertCase3(NodePtr node);
+  // node's parent is red, uncle is black. node is a right child of it's parent.
   void InsertCase4(NodePtr node);
+  // node's parent is red, uncle is black. node is a left child of it's parent.
   void InsertCase5(NodePtr node);
 
+  // As in a usual BST if node to be deleted has 2 children we reduce this
+  // number to 1. Afterwards we call EraseCase1(node).
+  // node is the root
   void EraseCase1(NodePtr node);
+  // node's parent is black, sibling is red.
   void EraseCase2(NodePtr node);
+  // node's parent and sibling are red.
   void EraseCase3(NodePtr node);
+  // node's parent is red, sibling and it's children are black.
   void EraseCase4(NodePtr node);
+  // node's parent is red, sibling and it's right child is black, left child is
+  // red.
   void EraseCase5(NodePtr node);
+  // node's parent is red, sibling and it's left child is black, right child is
+  // red.
   void EraseCase6(NodePtr node);
 
   Comp comp;
   NodePtr root_;
 };
+
+template <typename T>
+int TreeNode<T>::CheckRBTreeProperty() const {
+  if (color_ == BLACK) {
+    int l = 1;
+    if (left_) {
+      assert(this == left_->GetParent().get());
+      l = left_->CheckRBTreeProperty();
+    }
+    int r = 1;
+    if (right_) {
+      assert(this == right_->GetParent().get());
+      r = right_->CheckRBTreeProperty();
+    }
+    assert(l == r);
+    return l + 1;
+  } else {
+    int l = 1;
+    if (left_) {
+      assert(this == left_->GetParent().get());
+      assert(left_->color_ == BLACK);
+      l = left_->CheckRBTreeProperty();
+    }
+    int r = 1;
+    if (right_) {
+      assert(this == right_->GetParent().get());
+      assert(right_->color_ == BLACK);
+      r = right_->CheckRBTreeProperty();
+    }
+    assert(l == r);
+    return l;
+  }
+}
+
+template <typename T>
+std::string TreeNode<T>::Preorder() const {
+  std::stringstream res;
+  res << value_ << ((color_ == RED)?'@':' ') << " ";
+  res << "(";
+  if (left_) {
+    res << left_->Preorder();
+  }
+  res << ") (";
+  if (right_) {
+    res << right_->Preorder();
+  }
+  res << ")";
+  return res.str();
+}
 
 template <typename T, typename Comp>
 void RedBlackTree<T, Comp>::Insert(const T& value) {
@@ -306,38 +256,45 @@ void RedBlackTree<T, Comp>::Erase(const T& value) {
     node->SwapValues(*replacement_node);
     node = replacement_node;
   }
-  Erase(node);
-  /*if (node->GetLeft()) {
-    node->GetLeft()->SetParent(node->GetParent());
-    if (node->GetParent()) {
-      if (node->GetParent()->GetLeft() == node) {
-        node->GetParent()->SetLeft(node->GetLeft());
-      } else {
-        node->GetParent()->SetRight(node->GetLeft());
-      }
+  NodePtr child = node->GetLeft();
+  if (node->GetRight()) {
+    child = node->GetRight();
+  }
+
+  auto parent = node->GetParent();
+  if (child) {
+    child->SetParent(parent);
+    if (!parent) {
+      root_ = child;
+    } else if (node == parent->GetLeft()) {
+      parent->SetLeft(child);
     } else {
-      root_ = node->GetLeft();
+      parent->SetRight(child);
     }
-  } else if (node->GetRight()) {
-    node->GetRight()->SetParent(node->GetParent());
-    if (node->GetParent()) {
-      if (node->GetParent()->GetLeft() == node) {
-        node->GetParent()->SetLeft(node->GetRight());
+    if (TreeNode<T>::IsBlack(node)) {
+      if (TreeNode<T>::IsRed(child)) {
+        child->SetColor(TreeNode<T>::BLACK);
       } else {
-        node->GetParent()->SetRight(node->GetRight());
+        EraseCase1(node);
       }
-    } else {
-      root_ = node->GetRight();
     }
-  } else if (node->GetParent()) {
-    if (node->GetParent()->GetLeft() == node) {
-      node->GetParent()->SetLeft(nullptr);
+  } else if (parent) {
+    if (TreeNode<T>::IsBlack(node)) {
+      EraseCase1(node);
+      parent = node->GetParent();
+      if (node == parent->GetLeft()) {
+        parent->SetLeft(nullptr);
+      } else {
+        parent->SetRight(nullptr);
+      }
+    } else if (node == parent->GetLeft()) {
+      parent->SetLeft(nullptr);
     } else {
-      node->GetParent()->SetRight(nullptr);
+      parent->SetRight(nullptr);
     }
   } else {
     root_ = nullptr;
-  }*/
+  }
 }
 
 template <typename T, typename Comp>
@@ -360,7 +317,7 @@ std::shared_ptr<TreeNode<T>> RedBlackTree<T, Comp>::Find(const T& value) const {
 
 template <typename T, typename Comp>
 std::shared_ptr<TreeNode<T>> RedBlackTree<T, Comp>::GetLowerBound(
-    const T& value) {
+    const T& value) const {
   NodePtr cur_node = root_;
   NodePtr best_node;
   while (cur_node) {
@@ -372,6 +329,54 @@ std::shared_ptr<TreeNode<T>> RedBlackTree<T, Comp>::GetLowerBound(
     }
   }
   return best_node;
+}
+
+template <typename T, typename Comp>
+void RedBlackTree<T, Comp>::LeftRotate(NodePtr nodex) {
+  auto nodey = nodex->GetRight();
+  assert(nodey);
+  auto parent = nodex->GetParent();
+  nodey->SetParent(parent);
+  if (parent) {
+    if (nodex == parent->GetLeft()) {
+      parent->SetLeft(nodey);
+    } else {
+      parent->SetRight(nodey);
+    }
+  } else {
+    root_ = nodey;
+  }
+
+  if (nodey->GetLeft()) {
+    nodey->GetLeft()->SetParent(nodex);
+  }
+  nodex->SetRight(nodey->GetLeft());
+  nodey->SetLeft(nodex);
+  nodex->SetParent(nodey);
+}
+
+template <typename T, typename Comp>
+void RedBlackTree<T, Comp>::RightRotate(NodePtr nodey) {
+  auto nodex = nodey->GetLeft();
+  assert(nodex);
+  auto parent = nodey->GetParent();
+  nodex->SetParent(parent);
+  if (parent) {
+    if (nodey == parent->GetLeft()) {
+      parent->SetLeft(nodex);
+    } else {
+      parent->SetRight(nodex);
+    }
+  } else {
+    root_ = nodex;
+  }
+
+  if (nodex->GetRight()) {
+    nodex->GetRight()->SetParent(nodey);
+  }
+  nodey->SetLeft(nodex->GetRight());
+  nodex->SetRight(nodey);
+  nodey->SetParent(nodex);
 }
 
 template <typename T, typename Comp>
@@ -393,7 +398,7 @@ void RedBlackTree<T, Comp>::InsertCase2(NodePtr node) {
 template <typename T, typename Comp>
 void RedBlackTree<T, Comp>::InsertCase3(NodePtr node) {
   auto uncle = GetUncle(node);
-  if (uncle && uncle->GetColor() == TreeNode<T>::RED) {
+  if (TreeNode<T>::IsRed(uncle)) {
     node->GetParent()->SetColor(TreeNode<T>::BLACK);
     uncle->SetColor(TreeNode<T>::BLACK);
     auto grandparent = GetGrandparent(node);
@@ -424,7 +429,7 @@ void RedBlackTree<T, Comp>::InsertCase5(NodePtr node) {
   auto parent = node->GetParent();
   // parent is red => grandparent always exists
   auto grandparent = parent->GetParent();
-  auto grand_grandparent = grandparent->GetParent();
+  assert(grandparent);
   parent->SetColor(TreeNode<T>::BLACK);
   grandparent->SetColor(TreeNode<T>::RED);
   if (node == parent->GetLeft()) {
@@ -447,7 +452,8 @@ void RedBlackTree<T, Comp>::EraseCase2(NodePtr node) {
   auto sibling = GetSibling(node);
   assert(parent);
   assert(sibling);
-  if (sibling->GetColor() == TreeNode<T>::RED) {
+  if (TreeNode<T>::IsRed(sibling)) {
+    assert(TreeNode<T>::IsBlack(parent));
     parent->SetColor(TreeNode<T>::RED);
     sibling->SetColor(TreeNode<T>::BLACK);
     if (node == parent->GetLeft()) {
@@ -467,10 +473,9 @@ void RedBlackTree<T, Comp>::EraseCase3(NodePtr node) {
   auto sibling = GetSibling(node);
   assert(parent);
   assert(sibling);
-  if (parent->GetColor() == TreeNode<T>::BLACK &&
-      sibling->GetColor() == TreeNode<T>::BLACK &&
-      (!sibling->GetLeft() || sibling->GetLeft()->GetColor() == TreeNode<T>::BLACK) &&
-      (!sibling->GetRight() || sibling->GetRight()->GetColor() == TreeNode<T>::BLACK)) {
+  if (TreeNode<T>::IsBlack(parent) && TreeNode<T>::IsBlack(sibling) &&
+      TreeNode<T>::IsBlack(sibling->GetLeft()) &&
+      TreeNode<T>::IsBlack(sibling->GetRight())) {
     sibling->SetColor(TreeNode<T>::RED);
     EraseCase1(parent);
   } else {
@@ -484,10 +489,9 @@ void RedBlackTree<T, Comp>::EraseCase4(NodePtr node) {
   auto sibling = GetSibling(node);
   assert(parent);
   assert(sibling);
-  if (parent->GetColor() == TreeNode<T>::RED &&
-      sibling->GetColor() == TreeNode<T>::BLACK &&
-      (!sibling->GetLeft() || sibling->GetLeft()->GetColor() == TreeNode<T>::BLACK) &&
-      (!sibling->GetRight() || sibling->GetRight()->GetColor() == TreeNode<T>::BLACK)) {
+  if (TreeNode<T>::IsRed(parent) && TreeNode<T>::IsBlack(sibling) &&
+      TreeNode<T>::IsBlack(sibling->GetLeft()) &&
+      TreeNode<T>::IsBlack(sibling->GetRight())) {
     sibling->SetColor(TreeNode<T>::RED);
     parent->SetColor(TreeNode<T>::BLACK);
   } else {
@@ -501,16 +505,16 @@ void RedBlackTree<T, Comp>::EraseCase5(NodePtr node) {
   auto sibling = GetSibling(node);
   assert(parent);
   assert(sibling);
-  assert(sibling->GetColor() == TreeNode<T>::BLACK);
+  assert(TreeNode<T>::IsBlack(sibling));
   if (node == parent->GetLeft() &&
-      (!sibling->GetRight() || sibling->GetRight()->GetColor() == TreeNode<T>::BLACK) &&
-      (sibling->GetLeft() && sibling->GetLeft()->GetColor() == TreeNode<T>::RED)) {
+      TreeNode<T>::IsRed(sibling->GetLeft()) &&
+      TreeNode<T>::IsBlack(sibling->GetRight())) {
     sibling->SetColor(TreeNode<T>::RED);
     sibling->GetLeft()->SetColor(TreeNode<T>::BLACK);
     RightRotate(sibling);
-  } else if (node == node->GetParent()->GetRight() &&
-            (!sibling->GetLeft() || sibling->GetLeft()->GetColor() == TreeNode<T>::BLACK) &&
-            (sibling->GetRight() && sibling->GetRight()->GetColor() == TreeNode<T>::RED)) {
+  } else if (node == parent->GetRight() &&
+             TreeNode<T>::IsBlack(sibling->GetLeft()) &&
+             TreeNode<T>::IsRed(sibling->GetRight())) {
     sibling->SetColor(TreeNode<T>::RED);
     sibling->GetRight()->SetColor(TreeNode<T>::BLACK);
     LeftRotate(sibling);
@@ -528,12 +532,12 @@ void RedBlackTree<T, Comp>::EraseCase6(NodePtr node) {
   parent->SetColor(TreeNode<T>::BLACK);
   if (node == parent->GetLeft()) {
     assert(sibling->GetRight());
-    assert(sibling->GetRight()->GetColor() == TreeNode<T>::RED);
+    assert(TreeNode<T>::IsRed(sibling->GetRight()));
     sibling->GetRight()->SetColor(TreeNode<T>::BLACK);
     LeftRotate(parent);
   } else {
     assert(sibling->GetLeft());
-    assert(sibling->GetLeft()->GetColor() == TreeNode<T>::RED);
+    assert(TreeNode<T>::IsRed(sibling->GetLeft()));
     sibling->GetLeft()->SetColor(TreeNode<T>::BLACK);
     RightRotate(parent);
   }
@@ -541,46 +545,24 @@ void RedBlackTree<T, Comp>::EraseCase6(NodePtr node) {
 
 void RunTests() {
   RedBlackTree<int> rb_tree;
-  // Test internal representation
-  // rb_tree.Insert(3);
-  // assert("3 () ()" == rb_tree.GetRoot()->Preorder());
-  // rb_tree.Insert(4);
-  // assert("4 (3 () ()) ()" == rb_tree.GetRoot()->Preorder());
-  // rb_tree.Insert(5);
-  // assert("5 (4 (3 () ()) ()) ()" == rb_tree.GetRoot()->Preorder());
-  // rb_tree.Clear();
-  // rb_tree.Insert(5);
-  // assert("5 () ()" == rb_tree.GetRoot()->Preorder());
-  // rb_tree.Insert(4);
-  // assert("4 () (5 () ())" == rb_tree.GetRoot()->Preorder());
-  // rb_tree.Insert(3);
-  // assert("3 () (4 () (5 () ()))" == rb_tree.GetRoot()->Preorder());
-  // rb_tree.Clear();
-  //
-  // rb_tree.Insert(6);
-  // rb_tree.Insert(7);
-  // rb_tree.Insert(1);
-  // rb_tree.Insert(34);
-  // assert("34 (1 () (7 (6 () ()) ())) ()" == rb_tree.GetRoot()->Preorder());
-  // rb_tree.Clear();
-
   std::vector<int> elements;
   std::set<int> s;
-  for (int i = 0; i < 10; ++i) {
-    elements.push_back(rand() % 100);
-    // s.insert(elements.back());
-    // rb_tree.Insert(elements.back());
-    // rb_tree.CheckRBTreeProperty();
+  for (int i = 0; i < 1000; ++i) {
+    elements.push_back(rand());
+    s.insert(elements.back());
+    rb_tree.Insert(elements.back());
+    rb_tree.CheckRBTreeProperty();
   }
-  // for (auto e_to_remove: elements) {
-  //   for (auto e : s) {
-  //     assert(rb_tree.Find(e));
-  //   }
-  //   s.erase(e_to_remove);
-  // }
-  // for (auto e : s) {
-  //   assert(rb_tree.Find(e));
-  // }
+  for (auto e_to_remove: elements) {
+    for (auto e : s) {
+      assert(rb_tree.Find(e));
+    }
+    rb_tree.Erase(e_to_remove);
+    s.erase(e_to_remove);
+  }
+  for (auto e : s) {
+    assert(rb_tree.Find(e));
+  }
 
   rb_tree.Clear();
   rb_tree.Insert(1);
@@ -603,23 +585,14 @@ void RunTests() {
   }
   for (int i = 0; i < 10000; ++i) {
     int rand_id = rand() % elements.size();
-    // std::cout << "Erasing: " << elements[rand_id] << std::endl;
-    // std::cout << rb_tree.GetRoot()->Preorder() << std::endl;
     rb_tree.Erase(elements[rand_id]);
-    // std::cout << rb_tree.GetRoot()->Preorder() << std::endl;
     rb_tree.CheckRBTreeProperty();
     rb_tree.Insert(elements[rand_id]);
-    // std::cout << rb_tree.GetRoot()->Preorder() << std::endl;
     rb_tree.CheckRBTreeProperty();
     for (auto e : s) {
       assert(rb_tree.Find(e));
     }
-    // std::cout << i << std::endl;
   }
-
-  // rb_tree.Clear();
-  // rb_tree.Insert(5);
-  // rb_tree.Find(100);
 
   std::cout << "All tests passed!" << std::endl;
 }
