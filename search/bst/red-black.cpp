@@ -50,10 +50,12 @@ class TreeNode {
     if (color_ == BLACK) {
       int l = 1;
       if (left_) {
+        assert(this == left_->GetParent().get());
         l = left_->CheckRBTreeProperty();
       }
       int r = 1;
       if (right_) {
+        assert(this == right_->GetParent().get());
         r = right_->CheckRBTreeProperty();
       }
       assert(l == r);
@@ -61,11 +63,13 @@ class TreeNode {
     } else {
       int l = 1;
       if (left_) {
+        assert(this == left_->GetParent().get());
         assert(left_->color_ == BLACK);
         l = left_->CheckRBTreeProperty();
       }
       int r = 1;
       if (right_) {
+        assert(this == right_->GetParent().get());
         assert(right_->color_ == BLACK);
         r = right_->CheckRBTreeProperty();
       }
@@ -78,12 +82,10 @@ class TreeNode {
     res << value_ << ((color_ == RED)?'@':' ') << " ";
     res << "(";
     if (left_) {
-      assert(this == left_->GetParent().get());
       res << left_->Preorder();
     }
     res << ") (";
     if (right_) {
-      assert(this == right_->GetParent().get());
       res << right_->Preorder();
     }
     res << ")";
@@ -189,6 +191,59 @@ class RedBlackTree {
     nodey->SetParent(nodex);
   }
 
+  // Assumption: node has at most one non-leaf child
+  void Erase(NodePtr node) {
+    NodePtr child = node->GetLeft();
+    if (node->GetRight()) {
+      child = node->GetRight();
+    }
+
+    auto parent = node->GetParent();
+    if (child) {
+      child->SetParent(parent);
+      if (!parent) {
+        root_ = child;
+      } else if (node == parent->GetLeft()) {
+        parent->SetLeft(child);
+      } else {
+        parent->SetRight(child);
+      }
+      if (node->GetColor() == TreeNode<T>::BLACK) {
+        if (child && child->GetColor() == TreeNode<T>::RED) {
+          child->SetColor(TreeNode<T>::BLACK);
+        } else {
+          EraseCase1(node);
+        }
+      }
+    } else if (parent) {
+      if (node->GetColor() == TreeNode<T>::BLACK) {
+        EraseCase1(node);
+        parent = node->GetParent();
+        if (node == parent->GetLeft()) {
+          parent->SetLeft(nullptr);
+        } else {
+          parent->SetRight(nullptr);
+        }
+      } else if (node == parent->GetLeft()) {
+        parent->SetLeft(nullptr);
+      } else {
+        parent->SetRight(nullptr);
+      }
+    } else {
+      root_ = nullptr;
+    }
+  }
+
+  NodePtr GetSibling(NodePtr node) {
+    auto parent = node->GetParent();
+    assert(parent);
+    if (node == parent->GetLeft()) {
+      return parent->GetRight();
+    } else {
+      return parent->GetLeft();
+    }
+  }
+
   // This implementation is based on algorithm description provided at
   // https://en.wikipedia.org/wiki/Red%E2%80%93black_tree
   // node is root
@@ -199,6 +254,13 @@ class RedBlackTree {
   void InsertCase3(NodePtr node);
   void InsertCase4(NodePtr node);
   void InsertCase5(NodePtr node);
+
+  void EraseCase1(NodePtr node);
+  void EraseCase2(NodePtr node);
+  void EraseCase3(NodePtr node);
+  void EraseCase4(NodePtr node);
+  void EraseCase5(NodePtr node);
+  void EraseCase6(NodePtr node);
 
   Comp comp;
   NodePtr root_;
@@ -244,7 +306,8 @@ void RedBlackTree<T, Comp>::Erase(const T& value) {
     node->SwapValues(*replacement_node);
     node = replacement_node;
   }
-  if (node->GetLeft()) {
+  Erase(node);
+  /*if (node->GetLeft()) {
     node->GetLeft()->SetParent(node->GetParent());
     if (node->GetParent()) {
       if (node->GetParent()->GetLeft() == node) {
@@ -274,7 +337,7 @@ void RedBlackTree<T, Comp>::Erase(const T& value) {
     }
   } else {
     root_ = nullptr;
-  }
+  }*/
 }
 
 template <typename T, typename Comp>
@@ -371,6 +434,110 @@ void RedBlackTree<T, Comp>::InsertCase5(NodePtr node) {
   }
 }
 
+template <typename T, typename Comp>
+void RedBlackTree<T, Comp>::EraseCase1(NodePtr node) {
+  if (node->GetParent()) {
+    EraseCase2(node);
+  }
+}
+
+template <typename T, typename Comp>
+void RedBlackTree<T, Comp>::EraseCase2(NodePtr node) {
+  auto parent = node->GetParent();
+  auto sibling = GetSibling(node);
+  assert(parent);
+  assert(sibling);
+  if (sibling->GetColor() == TreeNode<T>::RED) {
+    parent->SetColor(TreeNode<T>::RED);
+    sibling->SetColor(TreeNode<T>::BLACK);
+    if (node == parent->GetLeft()) {
+      LeftRotate(parent);
+    } else {
+      RightRotate(parent);
+    }
+    EraseCase4(node);
+  } else {
+    EraseCase3(node);
+  }
+}
+
+template <typename T, typename Comp>
+void RedBlackTree<T, Comp>::EraseCase3(NodePtr node) {
+  auto parent = node->GetParent();
+  auto sibling = GetSibling(node);
+  assert(parent);
+  assert(sibling);
+  if (parent->GetColor() == TreeNode<T>::BLACK &&
+      sibling->GetColor() == TreeNode<T>::BLACK &&
+      (!sibling->GetLeft() || sibling->GetLeft()->GetColor() == TreeNode<T>::BLACK) &&
+      (!sibling->GetRight() || sibling->GetRight()->GetColor() == TreeNode<T>::BLACK)) {
+    sibling->SetColor(TreeNode<T>::RED);
+    EraseCase1(parent);
+  } else {
+    EraseCase4(node);
+  }
+}
+
+template <typename T, typename Comp>
+void RedBlackTree<T, Comp>::EraseCase4(NodePtr node) {
+  auto parent = node->GetParent();
+  auto sibling = GetSibling(node);
+  assert(parent);
+  assert(sibling);
+  if (parent->GetColor() == TreeNode<T>::RED &&
+      sibling->GetColor() == TreeNode<T>::BLACK &&
+      (!sibling->GetLeft() || sibling->GetLeft()->GetColor() == TreeNode<T>::BLACK) &&
+      (!sibling->GetRight() || sibling->GetRight()->GetColor() == TreeNode<T>::BLACK)) {
+    sibling->SetColor(TreeNode<T>::RED);
+    parent->SetColor(TreeNode<T>::BLACK);
+  } else {
+    EraseCase5(node);
+  }
+}
+
+template <typename T, typename Comp>
+void RedBlackTree<T, Comp>::EraseCase5(NodePtr node) {
+  auto parent = node->GetParent();
+  auto sibling = GetSibling(node);
+  assert(parent);
+  assert(sibling);
+  assert(sibling->GetColor() == TreeNode<T>::BLACK);
+  if (node == parent->GetLeft() &&
+      (!sibling->GetRight() || sibling->GetRight()->GetColor() == TreeNode<T>::BLACK) &&
+      (sibling->GetLeft() && sibling->GetLeft()->GetColor() == TreeNode<T>::RED)) {
+    sibling->SetColor(TreeNode<T>::RED);
+    sibling->GetLeft()->SetColor(TreeNode<T>::BLACK);
+    RightRotate(sibling);
+  } else if (node == node->GetParent()->GetRight() &&
+            (!sibling->GetLeft() || sibling->GetLeft()->GetColor() == TreeNode<T>::BLACK) &&
+            (sibling->GetRight() && sibling->GetRight()->GetColor() == TreeNode<T>::RED)) {
+    sibling->SetColor(TreeNode<T>::RED);
+    sibling->GetRight()->SetColor(TreeNode<T>::BLACK);
+    LeftRotate(sibling);
+  }
+  EraseCase6(node);
+}
+
+template <typename T, typename Comp>
+void RedBlackTree<T, Comp>::EraseCase6(NodePtr node) {
+  auto sibling = GetSibling(node);
+  auto parent = node->GetParent();
+  assert(parent);
+  assert(sibling);
+  sibling->SetColor(parent->GetColor());
+  parent->SetColor(TreeNode<T>::BLACK);
+  if (node == parent->GetLeft()) {
+    assert(sibling->GetRight());
+    assert(sibling->GetRight()->GetColor() == TreeNode<T>::RED);
+    sibling->GetRight()->SetColor(TreeNode<T>::BLACK);
+    LeftRotate(parent);
+  } else {
+    assert(sibling->GetLeft());
+    assert(sibling->GetLeft()->GetColor() == TreeNode<T>::RED);
+    sibling->GetLeft()->SetColor(TreeNode<T>::BLACK);
+    RightRotate(parent);
+  }
+}
 
 void RunTests() {
   RedBlackTree<int> rb_tree;
@@ -399,11 +566,11 @@ void RunTests() {
 
   std::vector<int> elements;
   std::set<int> s;
-  for (int i = 0; i < 10000; ++i) {
-    elements.push_back(rand());
-    s.insert(elements.back());
-    rb_tree.Insert(elements.back());
-    rb_tree.CheckRBTreeProperty();
+  for (int i = 0; i < 10; ++i) {
+    elements.push_back(rand() % 100);
+    // s.insert(elements.back());
+    // rb_tree.Insert(elements.back());
+    // rb_tree.CheckRBTreeProperty();
   }
   // for (auto e_to_remove: elements) {
   //   for (auto e : s) {
@@ -430,19 +597,26 @@ void RunTests() {
 
   rb_tree.Clear();
   s.clear();
-  // for (auto e : elements) {
-  //   rb_tree.Insert(e);
-  //   s.insert(e);
-  // }
-  // for (int i = 0; i < 1000; ++i) {
-  //   int rand_id = rand() % elements.size();
-  //   rb_tree.Erase(elements[rand_id]);
-  //   rb_tree.Insert(elements[rand_id]);
-  //   for (auto e : s) {
-  //     assert(rb_tree.Find(e));
-  //   }
-  // }
-  //
+  for (auto e : elements) {
+    rb_tree.Insert(e);
+    s.insert(e);
+  }
+  for (int i = 0; i < 10000; ++i) {
+    int rand_id = rand() % elements.size();
+    // std::cout << "Erasing: " << elements[rand_id] << std::endl;
+    // std::cout << rb_tree.GetRoot()->Preorder() << std::endl;
+    rb_tree.Erase(elements[rand_id]);
+    // std::cout << rb_tree.GetRoot()->Preorder() << std::endl;
+    rb_tree.CheckRBTreeProperty();
+    rb_tree.Insert(elements[rand_id]);
+    // std::cout << rb_tree.GetRoot()->Preorder() << std::endl;
+    rb_tree.CheckRBTreeProperty();
+    for (auto e : s) {
+      assert(rb_tree.Find(e));
+    }
+    // std::cout << i << std::endl;
+  }
+
   // rb_tree.Clear();
   // rb_tree.Insert(5);
   // rb_tree.Find(100);
@@ -483,7 +657,7 @@ class RoomsRange {
 };
 
 int main() {
-  RunTests();
+  // RunTests();
   RedBlackTree<RoomsRange> rb_tree;
   int queries_num;
   std::cin >> queries_num;
