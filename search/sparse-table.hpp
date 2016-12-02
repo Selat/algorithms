@@ -1,5 +1,5 @@
-#ifndef RMQ_HPP
-#define RMQ_HPP
+#ifndef SPARSE_TABLE_HPP
+#define SPARSE_TABLE_HPP
 
 #include <vector>
 #include <limits>
@@ -7,25 +7,26 @@
 
 #include "max-queue.hpp"
 
+// Idea: https://en.wikipedia.org/wiki/Range_minimum_query#Solution_using_constant_time_and_linearithmic_space
 template <typename T>
-class Rmq {
+class SparseTable {
  public:
-  static Rmq Init(const std::vector<T>& data) {
-    Rmq rmq;
+  static SparseTable Init(const std::vector<T>& data) {
+    SparseTable sparse_table;
     for (int len = 1; len < data.size(); len <<= 1) {
-      rmq.data_.push_back(std::vector<int>(data.size() - len + 1));
+      sparse_table.data_.push_back(std::vector<int>(data.size() - len + 1));
       QueueWithMaximum<int> q;
       for (int i = 0; i < len; ++i) {
         q.PushBack(-data[i]);
       }
       for (int i = 0; i + len < data.size(); ++i) {
-        rmq.data_.back()[i] = -q.PeekMax();
+        sparse_table.data_.back()[i] = -q.PeekMax();
         q.PopFront();
         q.PushBack(-data[i + len]);
       }
-      rmq.data_.back()[data.size() - len] = -q.PeekMax();
+      sparse_table.data_.back()[data.size() - len] = -q.PeekMax();
     }
-    return rmq;
+    return sparse_table;
   }
   T Query(int l, int r) {
     assert(r > l);
@@ -44,9 +45,9 @@ class Rmq {
     }
   }
 private:
-  Rmq() {
+  SparseTable() {
   }
   std::vector<std::vector<T>> data_;
 };
 
-#endif  // RMQ_HPP
+#endif  // SPARSE_TABLE_HPP

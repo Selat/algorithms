@@ -2,7 +2,7 @@
 #include <vector>
 #include <cassert>
 
-#include "rmq.hpp"
+#include "sparse-table.hpp"
 
 template <typename T>
 T FindMin(const std::vector<T>& data, int l, int r) {
@@ -20,7 +20,7 @@ void RunTests() {
   for (size_t i = 0; i < data.size(); ++i) {
     data[i] = rand();
   }
-  auto rmq = Rmq<int>::Init(data);
+  auto rmq = SparseTable<int>::Init(data);
   for (int i = 0; i < kTestsNum; ++i) {
     int l = rand() % n;
     int r = (rand() % n) + 1;
