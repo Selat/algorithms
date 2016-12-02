@@ -67,8 +67,8 @@ class CartesianTreeNode {
     }
   }
  private:
-  int id_;
   T value_;
+  int id_;
   std::shared_ptr<CartesianTreeNode> left_, right_;
   // Parent pointer should be weak in order to prevent cyclic references.
   std::weak_ptr<CartesianTreeNode> parent_;

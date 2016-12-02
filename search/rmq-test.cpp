@@ -40,31 +40,34 @@ void RunTests() {
 }
 
 void RunTests2() {
-  constexpr int n = 10;
+  constexpr int n = 10000;
   constexpr int kTestsNum = 10000;
   std::vector<int> data(n);
   for (size_t i = 0; i < data.size(); ++i) {
-    data[i] = rand() % 10;
+    data[i] = rand();
   }
   auto rmq = RmqLca<int>::Init(data);
-  // for (int i = 0; i < kTestsNum; ++i) {
-  //   int l = rand() % n;
-  //   int r = (rand() % n) + 1;
-  //   if (l > r) {
-  //     std::swap(l, r);
-  //   } else if (l == r) {
-  //     ++r;
-  //   }
-  //   int rmq_ans = rmq.Query(l, r);
-  //   int brute_ans = FindMin(data, l, r);
-  //   assert(rmq_ans == brute_ans);
-  // }
+  for (int i = 0; i < kTestsNum; ++i) {
+    int l = rand() % n;
+    int r = (rand() % n) + 1;
+    if (l > r) {
+      std::swap(l, r);
+    } else if (l == r) {
+      ++r;
+    }
+    // std::cout << i << " " << l << " " << r << std::endl;
+    int rmq_ans = rmq.Query(l, r);
+    assert(rmq_ans >= 0 && rmq_ans < n);
+    int brute_ans = FindMin(data, l, r);
+    assert(data[rmq_ans] == brute_ans);
+    // std::cout << "--------------------------" << std::endl;
+  }
 
   std::cout << "All tests passed!" << std::endl;
 }
 
 int main() {
-  RunTests();
-  // RunTests2();
+  // RunTests();
+  RunTests2();
   return 0;
 }

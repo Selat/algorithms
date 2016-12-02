@@ -50,8 +50,6 @@ class SparseTable {
     }
   }
 private:
-  SparseTable() {
-  }
   std::vector<T> source_data_;
   std::vector<std::vector<int>> data_;
 };
