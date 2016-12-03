@@ -33,8 +33,8 @@ void RunTests() {
     size_t r = l + (rand() % (n - l)) + 1;
     auto rmq_ans = rmq.Query(l, r);
     if (rmq_ans.size() == 2) {
-      assert(rmq_ans[0] >= 0 && rmq_ans[0] < n);
-      assert(rmq_ans[1] >= 0 && rmq_ans[1] < n);
+      assert(rmq_ans[0] >= l && rmq_ans[0] < r);
+      assert(rmq_ans[1] >= l && rmq_ans[1] < r);
       auto brute_ans = FindMins(data, l, r);
       assert(data[rmq_ans[0]] == brute_ans[0] && data[rmq_ans[1]] == brute_ans[1]);
     } else {
@@ -47,34 +47,41 @@ void RunTests() {
 }
 
 void RunTests2() {
-  constexpr int n = 10000;
+  constexpr int n = 10;
   constexpr int kTestsNum = 10000;
   std::vector<int> data(n);
   for (size_t i = 0; i < data.size(); ++i) {
-    data[i] = rand();
+    data[i] = rand() % 10;
+    std::cout << data[i] << " ";
   }
+  std::cout << std::endl;
   auto rmq = RmqLca<int>::Init(data);
   for (int i = 0; i < kTestsNum; ++i) {
-    int l = rand() % n;
-    int r = (rand() % n) + 1;
-    if (l > r) {
-      std::swap(l, r);
-    } else if (l == r) {
-      ++r;
+    size_t l = rand() % (n - 1);
+    size_t r = l + (rand() % (n - l)) + 1;
+    auto rmq_ans = rmq.Query(l, r);
+    std::cout << i << " " << l << " " << r << std::endl;
+    if (rmq_ans.size() == 2) {
+      assert(rmq_ans[0] >= l && rmq_ans[0] < r);
+      assert(rmq_ans[1] >= l && rmq_ans[1] < r);
+      auto brute_ans = FindMins(data, l, r);
+      std::cout << "Answer: ";
+      for (auto a : rmq_ans) {
+        std::cout << a << " ";
+      }
+      std::cout << std::endl;
+      assert(data[rmq_ans[0]] == brute_ans[0] && data[rmq_ans[1]] == brute_ans[1]);
+    } else {
+      assert(rmq_ans.size() == 1 && r - l == 1);
+      assert(rmq_ans[0] == l);
     }
-    // std::cout << i << " " << l << " " << r << std::endl;
-    // int rmq_ans = rmq.Query(l, r);
-    // assert(rmq_ans >= 0 && rmq_ans < n);
-    // int brute_ans = FindMin(data, l, r);
-    // assert(data[rmq_ans] == brute_ans);
-    // std::cout << "--------------------------" << std::endl;
   }
 
   std::cout << "All tests passed!" << std::endl;
 }
 
 int main() {
-  RunTests();
-  // RunTests2();
+  // RunTests();
+  RunTests2();
   return 0;
 }
