@@ -30,13 +30,17 @@ void RunTests() {
   auto rmq = SparseTable<int>::Init(data);
   for (int i = 0; i < kTestsNum; ++i) {
     int l = rand() % (n - 1);
-    int r = l + (rand() % (n - l - 1)) + 2;
+    int r = l + (rand() % (n - l)) + 1;
     auto rmq_ans = rmq.Query(l, r);
-    assert(rmq_ans.size() == 2);
-    assert(rmq_ans[0] >= 0 && rmq_ans[0] < n);
-    assert(rmq_ans[1] >= 0 && rmq_ans[1] < n);
-    auto brute_ans = FindMins(data, l, r);
-    assert(data[rmq_ans[0]] == brute_ans[0] && data[rmq_ans[1]] == brute_ans[1]);
+    if (rmq_ans.size() == 2) {
+      assert(rmq_ans[0] >= 0 && rmq_ans[0] < n);
+      assert(rmq_ans[1] >= 0 && rmq_ans[1] < n);
+      auto brute_ans = FindMins(data, l, r);
+      assert(data[rmq_ans[0]] == brute_ans[0] && data[rmq_ans[1]] == brute_ans[1]);
+    } else {
+      assert(rmq_ans.size() == 1 && r - l == 1);
+      assert(rmq_ans[0] == l);
+    }
   }
 
   std::cout << "All tests passed!" << std::endl;

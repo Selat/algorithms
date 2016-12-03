@@ -71,20 +71,24 @@ class SparseTable {
     return sparse_table;
   }
   std::vector<int> Query(int l, int r) {
-    assert(r - 2 >= l);
+    assert(r > l);
     int id = 0;
     int tmp = r - l;
     while (tmp > 1) {
       ++id;
       tmp >>= 1;
     }
-    if (r - l == (1 << id)) {
-      return data_[id][l];
+    if (r - l == 1) {
+      return {l};
     } else {
-      auto lid = data_[id][l];
-      auto rid = data_[id][r - (1 << id)];
-      assert(lid.size() == 2 && rid.size() == 2);
-      return MergeStatistics(lid, rid, source_data_);
+      if (r - l == (1 << id)) {
+        return data_[id][l];
+      } else {
+        auto lid = data_[id][l];
+        auto rid = data_[id][r - (1 << id)];
+        assert(lid.size() == 2 && rid.size() == 2);
+        return MergeStatistics(lid, rid, source_data_);
+      }
     }
   }
 private:
