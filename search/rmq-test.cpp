@@ -6,12 +6,18 @@
 #include "lca-rmq.hpp"
 
 template <typename T>
-T FindMin(const std::vector<T>& data, int l, int r) {
-  T res = std::numeric_limits<T>::max();
+std::vector<T> FindMins(const std::vector<T>& data, int l, int r) {
+  T min1 = std::numeric_limits<T>::max();
+  T min2 = std::numeric_limits<T>::max();
   for (int i = l; i < r; ++i) {
-    res = std::min(res, data[i]);
+    if (data[i] < min1) {
+      min2 = min1;
+      min1 = data[i];
+    } else if (data[i] < min2) {
+      min2 = data[i];
+    }
   }
-  return res;
+  return {min1, min2};
 }
 
 void RunTests() {
@@ -23,17 +29,14 @@ void RunTests() {
   }
   auto rmq = SparseTable<int>::Init(data);
   for (int i = 0; i < kTestsNum; ++i) {
-    int l = rand() % n;
-    int r = (rand() % n) + 1;
-    if (l > r) {
-      std::swap(l, r);
-    } else if (l == r) {
-      ++r;
-    }
-    int rmq_ans = rmq.Query(l, r);
-    assert(rmq_ans >= 0 && rmq_ans < n);
-    int brute_ans = FindMin(data, l, r);
-    assert(data[rmq_ans] == brute_ans);
+    int l = rand() % (n - 1);
+    int r = l + (rand() % (n - l - 1)) + 2;
+    auto rmq_ans = rmq.Query(l, r);
+    assert(rmq_ans.size() == 2);
+    assert(rmq_ans[0] >= 0 && rmq_ans[0] < n);
+    assert(rmq_ans[1] >= 0 && rmq_ans[1] < n);
+    auto brute_ans = FindMins(data, l, r);
+    assert(data[rmq_ans[0]] == brute_ans[0] && data[rmq_ans[1]] == brute_ans[1]);
   }
 
   std::cout << "All tests passed!" << std::endl;
@@ -56,10 +59,10 @@ void RunTests2() {
       ++r;
     }
     // std::cout << i << " " << l << " " << r << std::endl;
-    int rmq_ans = rmq.Query(l, r);
-    assert(rmq_ans >= 0 && rmq_ans < n);
-    int brute_ans = FindMin(data, l, r);
-    assert(data[rmq_ans] == brute_ans);
+    // int rmq_ans = rmq.Query(l, r);
+    // assert(rmq_ans >= 0 && rmq_ans < n);
+    // int brute_ans = FindMin(data, l, r);
+    // assert(data[rmq_ans] == brute_ans);
     // std::cout << "--------------------------" << std::endl;
   }
 
@@ -67,7 +70,7 @@ void RunTests2() {
 }
 
 int main() {
-  // RunTests();
-  RunTests2();
+  RunTests();
+  // RunTests2();
   return 0;
 }
