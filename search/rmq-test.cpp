@@ -29,8 +29,8 @@ void RunTests() {
   }
   auto rmq = SparseTable<int>::Init(data);
   for (int i = 0; i < kTestsNum; ++i) {
-    int l = rand() % (n - 1);
-    int r = l + (rand() % (n - l)) + 1;
+    size_t l = rand() % (n - 1);
+    size_t r = l + (rand() % (n - l)) + 1;
     auto rmq_ans = rmq.Query(l, r);
     if (rmq_ans.size() == 2) {
       assert(rmq_ans[0] >= 0 && rmq_ans[0] < n);
