@@ -16,9 +16,6 @@ class CartesianTreeArray {
     left_.assign(data.size(), -1);
     right_.assign(data.size(), -1);
     parent_.assign(data.size(), -1);
-    // We have to always store owning pointer to the tree root in order to
-    // prevent it from destructing (cur_node stores only weak pointer to it's
-    // parent).
     for (size_t i = 1; i < data.size(); ++i) {
       while (parent_[cur_node] != -1 && data[cur_node] > data[i]) {
         cur_node = parent_[cur_node];
@@ -40,10 +37,6 @@ class CartesianTreeArray {
       }
       cur_node = i;
     }
-    // for (auto p : parent_) {
-    //   std::cout << p << " ";
-    // }
-    // std::cout << std::endl;
   }
   void CheckHeapProperty() {
     if (root_id_ >= 0) {
