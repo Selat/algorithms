@@ -1,15 +1,13 @@
 import sympy
 import imp
-import ritz2
 import scipy.linalg as sla
 import matplotlib.pyplot as plt
 import numpy as np
 
-# Solves differential equation of the form
-# (p(x)u'(x))' - q(x)u(x) = f(x), a <= x <= b
-# u(a) = A, u(b) = B
-# Idea:
-# u_n(x) = phi_0(x) + \sum\limits_{k = 1}^n a_k\phi_k(x)
+
+def realf(x):
+    return (x ** 2 - 1) * (3 * s * (x ** 2 - 4) + 8) / 24.0
+
 def solve(p, q, f, phi, a, b):
     res = sympy.Integer(0)
     x = sympy.symbols('x', real=True)
@@ -38,8 +36,14 @@ a = 1
 b = 2
 Am, Bm = solve(p, q, f, phi, a, b)
 sol = sla.solve(Am, -Bm)
-t1 = np.arange(a, b, 0.02)
-plt.plot(t1, (t1 ** 2 - 1) * (3 * s * (t1 ** 2 - 4) + 8) / 24.0, label="exact solution")
-plt.plot(t1, t1 - 1 + sol[0] * (t1 - 1) * (2 - t1) + sol[1] * (2 - t1) * (t1 - 1) ** 2, label="approximate solution")
+xx = np.linspace(a + (b - a) / 20.0, b, num=20)
+approxf = lambda x : (xx - 1 + sol[0] * (xx - 1) * (2 - xx) + sol[1] * (2 - xx) * (xx - 1) ** 2)
+print('Max error: {}'.format(np.max(np.abs(realf(xx) - approxf(xx)))))
+print('A: {}'.format(Am))
+print('B: {}'.format(-Bm))
+print('Solution: {}'.format(sol))
+xx = np.arange(a, b, 0.02)
+plt.plot(xx, (xx ** 2 - 1) * (3 * s * (xx ** 2 - 4) + 8) / 24.0, label="exact")
+plt.plot(xx, xx - 1 + sol[0] * (xx - 1) * (2 - xx) + sol[1] * (2 - xx) * (xx - 1) ** 2, label="approximation")
 plt.legend(loc=2)
 plt.show()
