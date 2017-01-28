@@ -7,5 +7,11 @@ model {
             linker.args "-lpthread"
           }
         }
+
+        ch02_callable(NativeExecutableSpec) {
+          binaries.all {
+            linker.args "-lpthread"
+          }
+        }
     }
 }
