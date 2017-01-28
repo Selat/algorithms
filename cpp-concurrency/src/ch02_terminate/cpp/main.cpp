@@ -1,13 +1,23 @@
 #include <thread>
 #include <iostream>
 
-void slowFunction() {
-  for (int i = 0; i < 1000 * 1000; ++i);
+void test() {
+  std::cout << "hello" << std::endl;
+}
+
+void createThread() {
+  std::thread mythread(test);
+  throw std::exception();
+  mythread.join();
 }
 
 int main() {
-  // If main is finished before mythread.join() or mythrad.detach() is called,
-  // std::thread destructor calls std::terminate().
-  std::thread mythread(slowFunction);
+  // If std::thread destructor is executed before .detach() or .join() it
+  // calls std::terminate().
+  try {
+    createThread();
+  } catch (std::exception& e) {
+
+  }
   return 0;
 }
