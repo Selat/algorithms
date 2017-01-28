@@ -13,5 +13,11 @@ model {
             linker.args "-lpthread"
           }
         }
+
+        ch02_terminate(NativeExecutableSpec) {
+          binaries.all {
+            linker.args "-lpthread"
+          }
+        }
     }
 }

@@ -13,6 +13,10 @@ public:
 };
 
 int main() {
+  // Funny notes about C++ type inference rules:
+  // std::thread mythread(CallableTest()); -> function
+  // std::thread mythread((CallableTest())); -> object
+  // std::thread mythread{CallableTest()}; -> objedct
   CallableTest test;
   std::cout << "before thread creation" << std::endl;
   std::thread mythread(test);
