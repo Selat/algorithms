@@ -3,3 +3,8 @@ __pycache__
 *.aux
 *.log
 *.toc
+
+
+# Gradle files
+.gradle/
+build/

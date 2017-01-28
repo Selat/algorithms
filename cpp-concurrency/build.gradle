@@ -1,0 +1,11 @@
+apply plugin: 'cpp'
+
+model {
+    components {
+        ch01ex01(NativeExecutableSpec) {
+          binaries.all {
+            linker.args "-lpthread"
+          }
+        }
+    }
+}
