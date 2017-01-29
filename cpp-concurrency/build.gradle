@@ -19,5 +19,29 @@ model {
             linker.args "-lpthread"
           }
         }
+
+        ch02_guard(NativeExecutableSpec) {
+          binaries.all {
+            linker.args "-lpthread"
+          }
+        }
+
+        ch02_arguments(NativeExecutableSpec) {
+          binaries.all {
+            linker.args "-lpthread"
+          }
+        }
+
+        ch02_group(NativeExecutableSpec) {
+          binaries.all {
+            linker.args "-lpthread"
+          }
+        }
+
+        ch02_accumulate(NativeExecutableSpec) {
+          binaries.all {
+            linker.args "-lpthread"
+          }
+        }
     }
 }
