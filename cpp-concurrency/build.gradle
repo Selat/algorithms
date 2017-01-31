@@ -1,47 +1,20 @@
 apply plugin: 'cpp'
 
 model {
-    components {
-        ch01ex01(NativeExecutableSpec) {
-          binaries.all {
-            linker.args "-lpthread"
-          }
-        }
-
-        ch02_callable(NativeExecutableSpec) {
-          binaries.all {
-            linker.args "-lpthread"
-          }
-        }
-
-        ch02_terminate(NativeExecutableSpec) {
-          binaries.all {
-            linker.args "-lpthread"
-          }
-        }
-
-        ch02_guard(NativeExecutableSpec) {
-          binaries.all {
-            linker.args "-lpthread"
-          }
-        }
-
-        ch02_arguments(NativeExecutableSpec) {
-          binaries.all {
-            linker.args "-lpthread"
-          }
-        }
-
-        ch02_group(NativeExecutableSpec) {
-          binaries.all {
-            linker.args "-lpthread"
-          }
-        }
-
-        ch02_accumulate(NativeExecutableSpec) {
-          binaries.all {
-            linker.args "-lpthread"
-          }
-        }
+  binaries {
+    all {
+      cppCompiler.args "-std=c++11"
+      linker.args "-lpthread"
     }
+  }
+  components {
+    ch01ex01(NativeExecutableSpec)
+
+    ch02_callable(NativeExecutableSpec)
+    ch02_terminate(NativeExecutableSpec)
+    ch02_guard(NativeExecutableSpec)
+    ch02_arguments(NativeExecutableSpec)
+    ch02_group(NativeExecutableSpec)
+    ch02_accumulate(NativeExecutableSpec)
+  }
 }
