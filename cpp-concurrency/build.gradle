@@ -16,5 +16,7 @@ model {
     ch02_arguments(NativeExecutableSpec)
     ch02_group(NativeExecutableSpec)
     ch02_accumulate(NativeExecutableSpec)
+
+    ch03_list(NativeExecutableSpec)
   }
 }
