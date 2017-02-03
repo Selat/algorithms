@@ -18,5 +18,6 @@ model {
     ch02_accumulate(NativeExecutableSpec)
 
     ch03_list(NativeExecutableSpec)
+    ch03_swap(NativeExecutableSpec)
   }
 }
