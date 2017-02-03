@@ -19,5 +19,6 @@ model {
 
     ch03_list(NativeExecutableSpec)
     ch03_swap(NativeExecutableSpec)
+    ch03_hierarchical(NativeExecutableSpec)
   }
 }
