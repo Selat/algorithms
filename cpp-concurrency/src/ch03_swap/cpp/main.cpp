@@ -23,7 +23,7 @@ public:
     list_.push_back(val);
   }
   void swap(MyList<T>& other) {
-    // All-or-nothing semantics
+    // All-or-nothing semantics, just a simultaneous lock of all mutexes.
     std::lock(mutex_, other.mutex_);
     std::lock_guard<std::mutex> guard(mutex_, std::adopt_lock);
     std::lock_guard<std::mutex> other_guard(other.mutex_, std::adopt_lock);
