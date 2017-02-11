@@ -21,5 +21,6 @@ model {
     ch03_stack(NativeExecutableSpec)
     ch03_swap(NativeExecutableSpec)
     ch03_hierarchical(NativeExecutableSpec)
+    ch03_call_once(NativeExecutableSpec)
   }
 }
