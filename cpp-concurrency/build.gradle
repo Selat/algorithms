@@ -1,3 +1,7 @@
+plugins {
+  id "com.greenebeans.cpplint" version "0.1"
+}
+
 apply plugin: 'cpp'
 
 model {
@@ -22,5 +26,7 @@ model {
     ch03_swap(NativeExecutableSpec)
     ch03_hierarchical(NativeExecutableSpec)
     ch03_call_once(NativeExecutableSpec)
+
+    ch04_busy_wait(NativeExecutableSpec)
   }
 }
