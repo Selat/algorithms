@@ -28,5 +28,7 @@ model {
     ch03_call_once(NativeExecutableSpec)
 
     ch04_busy_wait(NativeExecutableSpec)
+    ch04_condition_variable(NativeExecutableSpec)
+    ch04_queue(NativeExecutableSpec)
   }
 }
