@@ -10,7 +10,7 @@ class MyQueue {
 public:
   MyQueue() {}
 
-  bool IsEmpty() {
+  bool IsEmpty() const {
     std::lock_guard<std::mutex> guard(mutex_);
     return data_.empty();
   }
@@ -60,7 +60,7 @@ public:
 private:
   std::queue<T> data_;
   std::condition_variable push_signal_;
-  std::mutex mutex_;
+  mutable std::mutex mutex_;
 };
 
 template <typename T, typename F, typename E>
