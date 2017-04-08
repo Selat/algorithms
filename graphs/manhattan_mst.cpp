@@ -7,10 +7,22 @@
 #include <cassert>
 #include <set>
 #include <chrono>
+#include <functional>
+
+#define TRANSFORM(newx, newy) \
+std::function<Point2D(Point2D)>([](Point2D p)->Point2D {\
+  double x = p.x, y = p.y;\
+  return {newx, newy};\
+})
 
 constexpr double EPS = 1E-6;
 
 struct Point2D {
+  Point2D() : x(0), y(0) {}
+  Point2D(const std::initializer_list<double>& l) {
+    x = *l.begin();
+    y = *(l.begin() + 1);
+  }
   double x, y;
 };
 
@@ -191,19 +203,23 @@ void BuildGraph(std::vector<std::vector<std::pair<int, double>>>& g) {
   g.resize(all_points.size());
   double delta_angle = M_PI / 8.0;
   double angle = 0.0;
-  for (int i = 0; i < 16; ++i) {
+  std::vector<std::function<Point2D(Point2D)>> transforms = {
+    TRANSFORM(x, y),
+    TRANSFORM(y, x),
+    TRANSFORM(-x, y),
+    TRANSFORM(y, -x),
+    TRANSFORM(x, -y),
+    TRANSFORM(-y, x),
+    TRANSFORM(-x, -y),
+    TRANSFORM(-y, -x)
+  };
+  for (int i = 0; i < 8; ++i) {
     // Rotate all points
     angle += delta_angle;
     auto tpoints = all_points;
     for (auto& point : all_points) {
-      double x = point.x;
-      double y = point.y;
-      point.x = x * cosl(angle) - y * sinl(angle);
-      point.y = x * sinl(angle) + y * cosl(angle);
-      x = point.x;
-      y = point.y;
-      point.x = (x - y) * 0.5;
-      point.y = y;
+      point = transforms[i](point);
+      point.x = (point.x - point.y) * 0.5;
     }
     std::vector<int> points(all_points.size());
     for (int i = 0; i < points.size(); ++i) {
@@ -305,8 +321,8 @@ void BrutePrim() {
   BuildGraph(g2);
   for (int i = 1; i < parents.size(); ++i) {
     bool is_found = false;
-    for (int j = 0; j < g[i].size(); ++j) {
-      if (g[i][j].first == parents[i]) {
+    for (int j = 0; j < g2[i].size(); ++j) {
+      if (g2[i][j].first == parents[i]) {
         is_found = true;
       }
     }
