@@ -5,6 +5,8 @@
 #include <cmath>
 #include <algorithm>
 #include <cassert>
+#include <set>
+#include <chrono>
 
 constexpr double EPS = 1E-6;
 
@@ -155,7 +157,7 @@ void FindNENeighbours(std::vector<int>& points, int l, int r) {
 }
 
 void CheckNENeighbours() {
-  all_neighbours.assign(n, -1);
+  all_neighbours.assign(all_points.size(), -1);
   BruteNENeighbours(all_points);
   auto tmp = all_neighbours;
   all_neighbours.assign(all_points.size(), -1);
@@ -184,6 +186,134 @@ void CheckNENeighbours() {
   std::cout << "All NE Neighbours tests passed :)" << std::endl;
 }
 
+void BuildGraph(std::vector<std::vector<std::pair<int, double>>>& g) {
+  g.clear();
+  g.resize(all_points.size());
+  double delta_angle = M_PI / 8.0;
+  double angle = 0.0;
+  for (int i = 0; i < 16; ++i) {
+    // Rotate all points
+    angle += delta_angle;
+    auto tpoints = all_points;
+    for (auto& point : all_points) {
+      double x = point.x;
+      double y = point.y;
+      point.x = x * cosl(angle) - y * sinl(angle);
+      point.y = x * sinl(angle) + y * cosl(angle);
+    }
+    std::vector<int> points(all_points.size());
+    for (int i = 0; i < points.size(); ++i) {
+      points[i] = i;
+    }
+    std::sort(points.begin(), points.end(), [](int p1, int p2) {
+      return all_points[p1].x < all_points[p2].x;
+    });
+    all_neighbours.assign(all_points.size(), -1);
+    FindNENeighbours(points, 0, all_points.size());
+    all_points = tpoints;
+    for (int i = 0; i < all_points.size(); ++i) {
+      int neighbour_id = all_neighbours[i];
+      if (neighbour_id < 0) continue;
+      bool already_connected = false;
+      for (auto& e : g[i]) {
+        if (e.first == neighbour_id) {
+          already_connected = true;
+          break;
+        }
+      }
+      if (already_connected) continue;
+      double dist = ManhattanDistance(all_points[i], all_points[neighbour_id]);
+      g[i].push_back(std::make_pair(neighbour_id, dist));
+      g[neighbour_id].push_back(std::make_pair(i, dist));
+    }
+  }
+  for (int i = 0; i < g.size(); ++i) {
+    assert(g[i].size() > 0);
+  }
+}
+
+void Prim(const std::vector<std::vector<std::pair<int, double>>>& g,
+          std::vector<int>& parents) {
+  parents.assign(g.size(), -1);
+  std::set<std::pair<double, int>> s;
+  std::vector<double> dists(g.size());
+  dists[0] = 0;
+  s.insert(std::make_pair(dists[0], 0));
+  for (int i = 1; i < g.size(); ++i) {
+    dists[i] = std::numeric_limits<double>::max();
+    s.insert(std::make_pair(dists[i], i));
+  }
+  while (!s.empty()) {
+    int u = s.begin()->second;
+    s.erase(s.begin());
+    for (int i = 0; i < g[u].size(); ++i) {
+      int to = g[u][i].first;
+      if (dists[to] < g[u][i].second) continue;
+      auto p = std::make_pair(dists[to], to);
+      auto it = s.find(p);
+      if (it != s.end()) {
+        s.erase(it);
+        dists[to] = g[u][i].second;
+        s.insert(std::make_pair(g[u][i].second, to));
+        parents[to] = u;
+      }
+    }
+  }
+  for (int i = 1; i < parents.size(); ++i) {
+    assert(parents[i] >= 0);
+  }
+}
+
+double GetTreeWeight(const std::vector<int>& parents) {
+  double total_weight = 0.0;
+  for (int i = 0; i < parents.size(); ++i) {
+    if (parents[i] >= 0) {
+      total_weight += ManhattanDistance(all_points[i], all_points[parents[i]]);
+    }
+  }
+  return total_weight;
+}
+
+void BrutePrim() {
+  std::vector<std::vector<std::pair<int, double>>> g(all_points.size());
+  for (int i = 0; i < all_points.size(); ++i) {
+    for (int j = 0; j < all_points.size(); ++j) {
+      if (i == j) continue;
+      double dist = ManhattanDistance(all_points[i], all_points[j]);
+      g[i].push_back(std::make_pair(j, dist));
+      g[j].push_back(std::make_pair(i, dist));
+    }
+  }
+  std::vector<int> parents;
+  double total_weight;
+  Prim(g, parents);
+  std::ofstream tout("tout1.txt");
+  for (int i = 0; i < parents.size(); ++i) {
+    tout << parents[i] << std::endl;
+  }
+  std::cout << GetTreeWeight(parents) << std::endl;
+}
+
+void ManhattanMST() {
+  std::vector<std::vector<std::pair<int, double>>> g;
+  std::vector<int> parents;
+  double total_weight;
+  BuildGraph(g);
+  std::ofstream outg("outg.txt");
+  for (int i = 0; i < g.size(); ++i) {
+    for (int j = 0; j < g[i].size(); ++j) {
+      outg << g[i][j].first << " ";
+    }
+    outg << std::endl;
+  }
+  Prim(g, parents);
+  std::ofstream tout("tout2.txt");
+  for (int i = 0; i < parents.size(); ++i) {
+    tout << parents[i] << std::endl;
+  }
+  std::cout << "Fast: " << GetTreeWeight(parents) << std::endl;
+}
+
 int main(int argc, char** argv) {
   assert(argc > 1);
   int n;
@@ -195,19 +325,10 @@ int main(int argc, char** argv) {
   for (int i = 0; i < n; ++i) {
     in >> all_points[i];
   }
-  // out << n << endl;
-  // for (int i = 0; i < n; ++i) {
-  //   double min_dist = std::numeric_limits<double>::max();
-  //   int closest_id = -1;
-  //   for (int j = 0; j < n; ++j) {
-  //     if (i == j) continue;
-  //     double dist = ManhattanDistance(all_points[i], all_points[j]);
-  //     if (dist < min_dist) {
-  //       min_dist = dist;
-  //       closest_id = j;
-  //     }
-  //   }
-  //   out << closest_id << endl;
-  // }
+  std::cout << "All points are read!" << std::endl;
+  auto start = std::chrono::high_resolution_clock::now();
+  ManhattanMST();
+  auto end = std::chrono::high_resolution_clock::now();
+  std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() << std::endl;
   return 0;
 }
