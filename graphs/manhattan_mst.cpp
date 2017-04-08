@@ -23,7 +23,7 @@ std::ostream& operator<<(std::ostream& out, const Point2D& point) {
 }
 
 double ManhattanDistance(const Point2D& point1, const Point2D& point2) {
-  return fabs(point1.x - point2.x) + fabs(point1.y - point2.y);
+  return std::abs(point1.x - point2.x) + std::abs(point1.y - point2.y);
 }
 
 constexpr int kMaxSize = 5;
