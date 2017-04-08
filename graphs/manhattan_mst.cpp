@@ -200,6 +200,10 @@ void BuildGraph(std::vector<std::vector<std::pair<int, double>>>& g) {
       double y = point.y;
       point.x = x * cosl(angle) - y * sinl(angle);
       point.y = x * sinl(angle) + y * cosl(angle);
+      x = point.x;
+      y = point.y;
+      point.x = (x - y) * 0.5;
+      point.y = y;
     }
     std::vector<int> points(all_points.size());
     for (int i = 0; i < points.size(); ++i) {
@@ -266,10 +270,19 @@ void Prim(const std::vector<std::vector<std::pair<int, double>>>& g,
 
 double GetTreeWeight(const std::vector<int>& parents) {
   double total_weight = 0.0;
+  std::vector<double> weights;
   for (int i = 0; i < parents.size(); ++i) {
     if (parents[i] >= 0) {
-      total_weight += ManhattanDistance(all_points[i], all_points[parents[i]]);
+      weights.push_back(ManhattanDistance(all_points[i], all_points[parents[i]]));
     }
+  }
+  std::sort(weights.begin(), weights.end());
+  double c = 0.0;
+  for (int i = 0; i < weights.size(); ++i) {
+    double y = weights[i] - c;
+    double t = total_weight + y;
+    c = (t - total_weight) - y;
+    total_weight = t;
   }
   return total_weight;
 }
@@ -288,8 +301,16 @@ void BrutePrim() {
   double total_weight;
   Prim(g, parents);
   std::ofstream tout("tout1.txt");
-  for (int i = 0; i < parents.size(); ++i) {
-    tout << parents[i] << std::endl;
+  std::vector<std::vector<std::pair<int, double>>> g2;
+  BuildGraph(g2);
+  for (int i = 1; i < parents.size(); ++i) {
+    bool is_found = false;
+    for (int j = 0; j < g[i].size(); ++j) {
+      if (g[i][j].first == parents[i]) {
+        is_found = true;
+      }
+    }
+    assert(is_found);
   }
   std::cout << GetTreeWeight(parents) << std::endl;
 }
@@ -328,6 +349,7 @@ int main(int argc, char** argv) {
   std::cout << "All points are read!" << std::endl;
   auto start = std::chrono::high_resolution_clock::now();
   ManhattanMST();
+  BrutePrim();
   auto end = std::chrono::high_resolution_clock::now();
   std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() << std::endl;
   return 0;
