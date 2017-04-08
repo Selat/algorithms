@@ -6,19 +6,17 @@
 #include <algorithm>
 #include <cassert>
 
-using namespace std;
-
 constexpr double EPS = 1E-6;
 
 struct Point2D {
   double x, y;
 };
 
-istream& operator>>(istream& in, Point2D& point) {
+std::istream& operator>>(std::istream& in, Point2D& point) {
   return in >> point.x >> point.y;
 }
 
-ostream& operator<<(ostream& out, const Point2D& point) {
+std::ostream& operator<<(std::ostream& out, const Point2D& point) {
   return out << "(" << point.x << " " << point.y << ")";
 }
 
@@ -31,23 +29,23 @@ constexpr int kMaxSize = 5;
 std::vector<Point2D> all_points;
 std::vector<int> all_neighbours;
 
-template <typename T>
-void Merge(const std::vector<T>& a, const std::vector<T>& b, std::vector<T>& out) {
-  auto it1 = a.begin();
-  auto it2 = b.begin();
-  auto out_it = out.begin();
-  while (it1 != a.end() && it2 != b.end()) {
+template <typename Iterator>
+void Merge(Iterator begin1, Iterator end1, Iterator begin2, Iterator end2,
+           Iterator out) {
+  auto it1 = begin1;
+  auto it2 = begin2;
+  while (it1 != end1 && it2 != end2) {
     if (all_points[*it1].y < all_points[*it2].y) {
-      *(out_it++) = *(it1++);
+      *(out++) = *(it1++);
     } else {
-      *(out_it++) = *(it2++);
+      *(out++) = *(it2++);
     }
   }
-  while (it1 != a.end()) {
-    *(out_it++) = *(it1++);
+  while (it1 != end1) {
+    *(out++) = *(it1++);
   }
-  while (it2 != b.end()) {
-    *(out_it++) = *(it2++);
+  while (it2 != end2) {
+    *(out++) = *(it2++);
   }
 }
 
@@ -92,13 +90,12 @@ void BruteNENeighbours(const std::vector<Point2D>& points) {
   }
 }
 
-void FindNENeighbours(std::vector<int>& points) {
-  if (points.size() < kMaxSize) {
-    // std::cout << "Brute<<<<<<<" << std::endl;
-    for (int i = 0; i < points.size(); ++i) {
+void FindNENeighbours(std::vector<int>& points, int l, int r) {
+  if (r - l < kMaxSize) {
+    for (int i = l; i < r; ++i) {
       double min_dist = std::numeric_limits<double>::max();
       int closest_id = -1;
-      for (int j = 0; j < points.size(); ++j) {
+      for (int j = l; j < r; ++j) {
         if (points[i] == points[j]
             || all_points[points[j]].x < all_points[points[i]].x
             || all_points[points[j]].y < all_points[points[i]].y) continue;
@@ -110,38 +107,14 @@ void FindNENeighbours(std::vector<int>& points) {
       }
       UpdateNeighbour(points[i], closest_id);
     }
-    std::sort(points.begin(), points.end(), [](int p1, int p2) {
+    std::sort(points.begin() + l, points.begin() + r, [](int p1, int p2) {
       return all_points[p1].y < all_points[p2].y;
     });
-    // std::cout << ">>>>>>>Brute" << std::endl;
   } else {
-    std::vector<int> sorted_points = points;
-    std::sort(sorted_points.begin(), sorted_points.end(),
-              [](int p1, int p2) {
-      return all_points[p1].x < all_points[p2].x;
-    });
-    double med_x = all_points[sorted_points[sorted_points.size() / 2]].x;
-    std::vector<int> left_points;
-    std::vector<int> right_points;
-    for (auto p : sorted_points) {
-      if (all_points[p].x <= med_x) {
-        left_points.push_back(p);
-      } else {
-        right_points.push_back(p);
-      }
-    }
-    FindNENeighbours(left_points);
-    FindNENeighbours(right_points);
-    // std::cout << "Split: " << med_x << " " << left_points.size() << " " << right_points.size() << std::endl;
-    // for (auto l : left_points) {
-    //   std::cout << l << " " << all_points[l] << std::endl;
-    // }
-    // std::cout << "----------" << std::endl;
-    // for (auto l : right_points) {
-    //   std::cout << l << " " << all_points[l] << std::endl;
-    // }
-    // std::cout << "==========" << std::endl;
-
+    FindNENeighbours(points, l, l + (r - l) / 2);
+    FindNENeighbours(points, l + (r - l) / 2, r);
+    std::vector<int> left_points(points.begin() + l, points.begin() + l + (r - l) / 2);
+    std::vector<int> right_points(points.begin() + l + (r - l) / 2, points.begin() + r);
     int left = left_points.size() - 1;
     int right = right_points.size() - 1;
     int min_id = right_points.size() - 1;
@@ -152,10 +125,8 @@ void FindNENeighbours(std::vector<int>& points) {
         all_points[right_points[min_id]]);
     }
     while (right > 0 && left >= 0) {
-      // std::cout << left << " " << right << std::endl;
       --right;
       while (left >= 0 && all_points[right_points[right]].y < all_points[left_points[left]].y) {
-        // std::cout << "ok for " << left_points[left] << " " << right_points[right] << std::endl;
         UpdateNeighbour(left_points[left], right_points[min_id]);
         --left;
         if (left >= 0) {
@@ -166,8 +137,6 @@ void FindNENeighbours(std::vector<int>& points) {
       if (left >= 0) {
         double cur_dist = ManhattanDistance(all_points[left_points[left]],
           all_points[right_points[right]]);
-        // std::cout << "Dists: " << cur_dist << " " << min_dist << std::endl;
-        // std::cout << left_points[left] << " " << right_points[right] << " " << right_points[min_id] << std::endl;
         if (cur_dist < min_dist) {
           min_id = right;
           min_dist = cur_dist;
@@ -179,33 +148,27 @@ void FindNENeighbours(std::vector<int>& points) {
       --left;
     }
 
-    Merge(left_points, right_points, points);
+    Merge(left_points.begin(), left_points.end(),
+          right_points.begin(), right_points.end(),
+          points.begin() + l);
   }
 }
 
-int main(int argc, char** argv) {
-  assert(argc > 1);
-  int n;
-  ifstream in(argv[1]);
-  ofstream out("output.txt");
-  in >> n;
-  std::cout << n << std::endl;
-  all_points.resize(n);
+void CheckNENeighbours() {
   all_neighbours.assign(n, -1);
-  for (int i = 0; i < n; ++i) {
-    in >> all_points[i];
-  }
   BruteNENeighbours(all_points);
   auto tmp = all_neighbours;
-  all_neighbours.assign(n, -1);
+  all_neighbours.assign(all_points.size(), -1);
 
-  std::vector<int> points(n);
-  for (int i = 0; i < n; ++i) {
+  std::vector<int> points(all_points.size());
+  for (int i = 0; i < points.size(); ++i) {
     points[i] = i;
   }
-  FindNENeighbours(points);
+  std::sort(points.begin(), points.end(), [](int p1, int p2) {
+    return all_points[p1].x < all_points[p2].x;
+  });
+  FindNENeighbours(points, 0, points.size());
   for (int i = 0; i < all_points.size(); ++i) {
-    // std::cout << i << " " << all_neighbours[i] << " " << tmp[i] << std::endl;
     if (all_neighbours[i] < 0) {
       assert(tmp[i] < 0);
       continue;
@@ -216,9 +179,21 @@ int main(int argc, char** argv) {
     }
     double d1 = ManhattanDistance(all_points[i], all_points[all_neighbours[i]]);
     double d2 = ManhattanDistance(all_points[i], all_points[tmp[i]]);
-    // assert(d1 >= d2);
-    // std::cout << d1 << " " << d2 << std::endl;
     assert(fabs(d1 - d2) < EPS);
+  }
+  std::cout << "All NE Neighbours tests passed :)" << std::endl;
+}
+
+int main(int argc, char** argv) {
+  assert(argc > 1);
+  int n;
+  std::ifstream in(argv[1]);
+  std::ofstream out("output.txt");
+  in >> n;
+  std::cout << n << std::endl;
+  all_points.resize(n);
+  for (int i = 0; i < n; ++i) {
+    in >> all_points[i];
   }
   // out << n << endl;
   // for (int i = 0; i < n; ++i) {
