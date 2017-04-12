@@ -9,6 +9,10 @@
 #include <chrono>
 #include <functional>
 
+/*
+ * Idea: http://www.sciencedirect.com/science/article/pii/0020019083900455
+ */
+
 #define TRANSFORM(newx, newy) \
 std::function<Point2D(Point2D)>([](Point2D p)->Point2D {\
   double x = p.x, y = p.y;\
