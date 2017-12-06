@@ -15,40 +15,6 @@ ALPHABETS = {
     'ru': RUSSIAN_ALPHABET,
 }
 
-# ENGLISH_FREQENCIES = {
-#     'a': 0.08167,
-#     'b': 0.01492,
-#     'c': 0.02782,
-#     'd': 0.04253,
-#     'e': 0.12702,
-#     'f': 0.0228,
-#     'g': 0.02015,
-#     'h': 0.06094,
-#     'i': 0.06966,
-#     'j': 0.00153,
-#     'k': 0.00772,
-#     'l': 0.04025,
-#     'm': 0.02406,
-#     'n': 0.06749,
-#     'o': 0.07507,
-#     'p': 0.01929,
-#     'q': 0.00095,
-#     'r': 0.05987,
-#     's': 0.06327,
-#     't': 0.09056,
-#     'u': 0.02758,
-#     'v': 0.00978,
-#     'w': 0.0236,
-#     'x': 0.0015,
-#     'y': 0.01974,
-#     'z': 0.00074,
-# }
-
-ENGLISH_FREQENCIES = 'etoainhsrdlucgwmfpybvkjxqz'
-# ENGLISH_FREQENCIES = 'etsinoarhlcmdpfuybgvwxkqzj'
-# ENGLISH_FREQENCIES = 'eotrniashdlucyvmfpgbwkxjqz'
-# BAD_ENGLISH_FREQUENCIES = 'etaoinshrdlcumwfgypbvkjxqz'
-
 def inverse_alphabet(alphabet):
     res = {}
     for id, letter in enumerate(alphabet):
@@ -135,15 +101,10 @@ def frequency_decryption(text, alphabet):
     sorted_letters = sorted(list(letter_counts.items()), reverse=True,
         key=lambda x: x[1])
 
-    # print(sorted_letters[0])
     letters_seq = ''.join(map(lambda a: a[0], sorted_letters))
     initial_id = alphabet.find('e')
     cur_id = alphabet.find(sorted_letters[0][0])
-    # print(initial_id, cur_id, alphabet[cur_id - initial_id])
     shifted_alphabet = shift(alphabet, cur_id - initial_id)
-    # print(shifted_alphabet)
-    # print(alphabet)
-    # print(text[0])
     trans = str.maketrans(shifted_alphabet, alphabet)
     result_text = ''
     for c in text:
@@ -240,7 +201,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-    # with open('christmas_carol.txt') as f:
-    #     text = f.read()
-    #     frequency_decryption(text[0::5], ENGLISH_FREQENCIES)
-    #     frequency_decryption(text[1::5], ENGLISH_FREQENCIES)
