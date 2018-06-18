@@ -12,6 +12,10 @@ public:
   static_assert(alignment < 256);
   typedef T value_type;
 
+  template <typename Other> struct rebind {
+    using other = AlignedAlloc<Other, alignment>;
+  };
+
   void deallocate(T *p, size_t /* not used */) {
     assert(p != nullptr);
     uint8_t *aligned_ptr = reinterpret_cast<uint8_t*>(p);
@@ -31,3 +35,13 @@ public:
     return reinterpret_cast<T*>(aligned_ptr);
   }
 };
+
+template<typename T, typename U, size_t S1, size_t S2>
+constexpr bool operator==(const AlignedAlloc<T, S1>&, const AlignedAlloc<U, S2>&) noexcept {
+  return S1 == S2;
+}
+
+template<typename T, typename U, size_t S1, size_t S2>
+constexpr bool operator!=(const AlignedAlloc<T, S1>&, const AlignedAlloc<U, S2>&) noexcept {
+  return S1 != S2;
+}
