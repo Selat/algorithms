@@ -46,16 +46,19 @@ void TestAddressAlignments(int tests_num) {
   std::cout << "ok!" << std::endl;
 }
 
-void TestRebind() {
+void TestMoveAssignment() {
+  std::cout << "Testing move assignment..." << std::flush;
+
   // We try to invoke move assigment operator here.
   std::vector<int, AlignedAlloc<int, 8>> data;
   data = std::vector<int, AlignedAlloc<int, 8>>(100, 12);
+
+  std::cout << "ok!" << std::endl;
 }
 
 int main() {
   TestLinearFill(100000);
   TestAddressAlignments(1000);
-
-  TestRebind();
+  TestMoveAssignment();
   return 0;
 }
