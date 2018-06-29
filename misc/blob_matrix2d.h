@@ -30,6 +30,14 @@ class BlobMatrix2D {
     assert(j < cols_);
     return *(reinterpret_cast<T*>(data_ + i * bytes_per_row_) + j);
   }
+
+  size_t rows() {
+    return rows_;
+  }
+
+  size_t cols() {
+    return cols_;
+  }
  private:
   uint8_t *data_;
   size_t rows_;
