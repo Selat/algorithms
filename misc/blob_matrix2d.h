@@ -19,7 +19,15 @@ class BlobMatrix2D {
   }
   BlobMatrix2D(const BlobMatrix2D&) = delete;
 
-  T& operator()(int i, int j) {
+  T& operator()(size_t i, size_t j) {
+    assert(i < rows_);
+    assert(j < cols_);
+    return *(reinterpret_cast<T*>(data_ + i * bytes_per_row_) + j);
+  }
+
+  const T& operator()(size_t i, size_t j) const {
+    assert(i < rows_);
+    assert(j < cols_);
     return *(reinterpret_cast<T*>(data_ + i * bytes_per_row_) + j);
   }
  private:

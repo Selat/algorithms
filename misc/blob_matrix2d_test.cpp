@@ -43,9 +43,30 @@ void TestRowPadding() {
   delete[] data;
 }
 
+void TestConst() {
+  constexpr int kWidth = 100;
+  constexpr int kHeight = 200;
+  int *data = new int[kWidth * kHeight];
+  for (int i = 0; i < kHeight; ++i) {
+    for (int j = 0; j < kWidth; ++j) {
+      data[i * kWidth + j] = i * kWidth + j;
+    }
+  }
+
+  const BlobMatrix2D<int> blob_matrix(data, kHeight, kWidth);
+  for (int i = 0; i < kHeight; ++i) {
+    for (int j = 0; j < kWidth; ++j) {
+      assert(blob_matrix(i, j) == i * kWidth + j);
+    }
+  }
+
+  delete[] data;
+}
+
 int main() {
   TestCompactPacking();
   TestRowPadding();
+  TestConst();
   std::cout << "All tests passed! :)" << std::endl;
   return 0;
 }
