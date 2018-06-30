@@ -31,11 +31,11 @@ class BlobMatrix2D {
     return *(reinterpret_cast<T*>(data_ + i * bytes_per_row_) + j);
   }
 
-  size_t rows() {
+  size_t rows() const {
     return rows_;
   }
 
-  size_t cols() {
+  size_t cols() const {
     return cols_;
   }
  private:
